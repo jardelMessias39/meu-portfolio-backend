@@ -75,9 +75,10 @@ async def chat_endpoint(request: ChatRequest):
         session_id=request.session_id
     )
     return ChatResponse(
-        response={"message": "Me diga uma curiosidade sobre o espaço"},
+        response={"message": resposta},
         session_id=session_id
     )
+
 
 @api_router.get("/chat/sessions/{session_id}")
 async def get_chat_session(session_id: str):
