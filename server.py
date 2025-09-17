@@ -75,7 +75,7 @@ async def chat_endpoint(request: ChatRequest):
         session_id=request.session_id
     )
     return ChatResponse(
-        response=resposta,
+        response={"message": "Me diga uma curiosidade sobre o espaço"},
         session_id=session_id
     )
 
