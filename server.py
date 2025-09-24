@@ -1,6 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Body
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -8,12 +7,17 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from models import StatusCheck, StatusCheckCreate, ChatRequest, ChatResponse
 from chat_service import ChatService
+import traceback
 from typing import List
-
-
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv()
+print("MONGO_URL:", os.getenv("MONGO_URL"))
+print("DB_NAME:", os.getenv("DB_NAME"))
+print("OPENAI_API_KEY:", os.getenv("OPENAI_API_KEY"))
+
 
 # Configure logging
 logging.basicConfig(
@@ -42,13 +46,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
-# Configure CORS
+frontend_url = os.environ.get("FRONTEND_URL", "https://meu-portfolio-jardel.vercel.app")
+origins = [
+   frontend_url,
+    "http://localhost:3000",                    # ← para testes locais
+    "http://localhost:5173"
+]
+
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=origins,              # lista explícita
     allow_credentials=True,
-    allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 # Rotas
@@ -68,16 +78,55 @@ async def create_status_check(input: StatusCheckCreate):
     _ = await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
+
+@app.middleware("http")
+async def log_origin(request: Request, call_next):
+    origin = request.headers.get("origin")
+    print("Origin da requisição:", origin)
+    response = await call_next(request)
+
+    print("Retornando:", (response, response.headers.get("X-Session-ID")))
+    return response
+
 @api_router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    resposta, session_id = await chat_service.process_message(
-        message=request.message,
-        session_id=request.session_id
-    )
-    return ChatResponse(
-        response={"message": resposta},
-        session_id=session_id
-    )
+async def chat_endpoint(request: Request):
+    try:
+        data = await request.json()
+        message = data.get("message")
+        session_id = data.get("session_id")
+
+        if not message:
+            raise HTTPException(status_code=400, detail="Campo 'message' é obrigatório")
+
+        # Início do bloco de diagnóstico
+        try:
+            # Tenta descompactar os valores normalmente
+            resposta, nova_session_id = await chat_service.process_message(
+                message=message,
+                session_id=session_id
+            )
+        except ValueError as ve:
+            # Se a descompactação falhar, pegue o retorno da função e imprima
+            returned_value = await chat_service.process_message(
+                message=message,
+                session_id=session_id
+            )
+            logger.error(f"ValueError capturado! O valor retornado foi: {returned_value} (tipo: {type(returned_value)})")
+            # Propositalmente relança o erro para que o bloco 'except' externo o pegue.
+            raise ve
+
+        # Fim do bloco de diagnóstico
+        
+        print("Resposta gerada:", resposta, "Session ID:", nova_session_id)
+        return ChatResponse(
+            response=resposta,
+            session_id=nova_session_id
+        )
+
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(f"Erro no chat_endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
 @api_router.get("/chat/sessions/{session_id}")
@@ -86,6 +135,7 @@ async def get_chat_session(session_id: str):
         sessao = await chat_service.get_session_history(session_id)
         if not sessao:
             raise HTTPException(status_code=404, detail="Sessão não encontrada")
+        print("Retornando:", (sessao, sessao.session_id))
         return {
             "session_id": sessao.session_id,
             "messages": [
@@ -99,9 +149,7 @@ async def get_chat_session(session_id: str):
         }
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Erro ao buscar sessão: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erro interno do servidor")
+
 
 # Inclua o router APENAS depois de todas as rotas estarem definidas
 app.include_router(api_router)

@@ -1,27 +1,35 @@
 import os
-from models import ChatSession, ChatMessage
-from datetime import datetime
+import uuid
 import logging
+import traceback
 import openai
 from dotenv import load_dotenv
-import openai
+from typing import Optional, List
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, PrivateAttr
+from motor.motor_asyncio import AsyncIOMotorClient
 
+# Configurações iniciais
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
-# FastAPI app instance and lifespan manager removed from this module.
-
-
 logger = logging.getLogger(__name__)
 
-class ChatService:
-    def __init__(self, db):
-        self.db = db
-        load_dotenv()
-        self.api_key = os.getenv("OPENAI_API_KEY")
-        self.openai_client = openai.OpenAI(api_key=self.api_key)
+# Modelos para Pydantic
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
 
+class ChatSession(BaseModel):
+    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=timezone.utc))
+    messages: List[ChatMessage] = []
+
+class ChatService:
+    def __init__(self, db: AsyncIOMotorClient):
+        self.db = db
+        self.openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        
         # Contexto detalhado sobre o desenvolvedor em português
         self.system_message = """Você é o assistente virtual do portfólio de um desenvolvedor júnior full stack brasileiro.
         
@@ -112,8 +120,7 @@ INSTRUÇÕES DE RESPOSTA:
 - Mantenha um tom conversacional e amigável
 - Destaque sempre o desejo de fazer a diferença através da programação
 - Use linguagem simples e clara
-- Evite termos técnicos em inglês sem explicação
-"""
+- Evite termos técnicos em inglês sem explicação"""
 
     def send_message_to_openai(self, message: str) -> str:
         response = self.openai_client.chat.completions.create(
@@ -126,65 +133,9 @@ INSTRUÇÕES DE RESPOSTA:
         return response.choices[0].message.content
         return response.choices[0].message.content
 
-    async def get_or_create_session(self, session_id: str = None) -> ChatSession:
-        """Busca uma sessão existente ou cria uma nova"""
-        if session_id:
-            session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
-            if session_data:
-                messages = [
-                    ChatMessage(**msg) for msg in session_data.get("messages", [])
-                ]
-                return ChatSession(
-                    session_id=session_data["session_id"],
-                    created_at=session_data["created_at"],
-                    updated_at=session_data["updated_at"],
-                    messages=messages
-                )
-        new_session = ChatSession()
-        await self.db.chat_sessions.insert_one(new_session.dict())
-        return new_session
-
-    async def save_session(self, session: ChatSession):
-        """Salva a sessão no MongoDB"""
-        session.updated_at = datetime.utcnow()
-        await self.db.chat_sessions.update_one(
-            {"session_id": session.session_id},
-            {"$set": session.dict()},
-            upsert=True
-        )
-    async def process_message(self, session_id: str, message: str) -> str:
-        try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": self.system_message},
-                    {"role": "user", "content": message}
-                ]
-            )
-            ai_response = response.choices[0].message.content
-
-            # Salva no MongoDB
-            self.db["chat_messages"].insert_one({
-                "session_id": session_id,
-                "user_message": message,
-                "ai_response": ai_response,
-                "timestamp": datetime.utcnow()
-            })
-
-            return ai_response
-
-        except Exception as e:
-            logger.error(f"Erro ao processar mensagem: {str(e)}")
-            resposta_fallback = (
-                "Desculpe, ocorreu um problema técnico. Mas posso te contar que sou um "
-                "desenvolvedor júnior apaixonado por transformar ideias em código! "
-                "Tenho 3 projetos principais e estou sempre aprendendo. O que você gostaria de saber?"
-            )
-            return resposta_fallback
-            
-
-    async def get_session_history(self, session_id: str) -> ChatSession:
-        """Retorna o histórico de uma sessão"""
+async def get_or_create_session(self, session_id: str = None) -> ChatSession:
+    """Busca uma sessão existente ou cria uma nova"""
+    if session_id:
         session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
         if session_data:
             messages = [
@@ -196,4 +147,67 @@ INSTRUÇÕES DE RESPOSTA:
                 updated_at=session_data["updated_at"],
                 messages=messages
             )
-        return None
+    new_session = ChatSession()
+    await self.db.chat_sessions.insert_one(new_session.dict())
+    return new_session
+
+async def save_session(self, session: ChatSession):
+    session.updated_at = datetime.now(timezone.utc)
+    await self.db.chat_sessions.update_one(
+        {"session_id": session.session_id},
+        {"$set": session.dict()},
+        upsert=True
+    )
+    
+async def process_message(self, message: str, session_id: Optional[str] = None) -> tuple[str, str]:
+    try:
+        session = await self.get_or_create_session(session_id)
+
+        user_msg = ChatMessage(role="user", content=message)
+        session.messages.append(user_msg)
+        
+        messages_to_openai = [
+            {"role": "system", "content": self.system_message}
+        ] + [
+            {"role": msg.role, "content": msg.content}
+            for msg in session.messages
+        ]
+
+        response = self.openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages_to_openai
+        )
+        ai_response_content = response.choices[0].message.content
+        
+        ai_msg = ChatMessage(role="assistant", content=ai_response_content)
+        session.messages.append(ai_msg)
+        
+        await self.save_session(session)
+
+        print("Retornando:", (ai_response_content, session.session_id)) # Adicione esta linha
+        return ai_response_content, session.session_id
+
+    except Exception as e:
+        logger.error(f"Erro ao processar mensagem: {str(e)}")
+        resposta_fallback = (
+            "Desculpe, ocorreu um problema técnico. Mas posso te contar que sou um "
+            "desenvolvedor júnior apaixonado por transformar ideias em código! "
+            "Tenho 3 projetos principais e estou sempre aprendendo. O que você gostaria de saber?"
+        )
+        return resposta_fallback
+            
+
+async def get_session_history(self, session_id: str) -> ChatSession:
+    """Retorna o histórico de uma sessão"""
+    session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
+    if session_data:
+        messages = [
+            ChatMessage(**msg) for msg in session_data.get("messages", [])
+        ]
+        return ChatSession(
+            session_id=session_data["session_id"],
+            created_at=session_data["created_at"],
+            updated_at=session_data["updated_at"],
+            messages=messages
+        )
+    return None
