@@ -173,7 +173,8 @@ async def process_message(self, message: str, session_id: Optional[str] = None) 
             for msg in session.messages
         ]
 
-        response = self.openai_client.chat.completions.create(
+        # Use await aqui porque self.openai_client.chat.completions.create é uma função assíncrona
+        response = await self.openai_client.chat.completions.create( 
             model="gpt-3.5-turbo",
             messages=messages_to_openai
         )
@@ -194,7 +195,8 @@ async def process_message(self, message: str, session_id: Optional[str] = None) 
             "desenvolvedor júnior apaixonado por transformar ideias em código! "
             "Tenho 3 projetos principais e estou sempre aprendendo. O que você gostaria de saber?"
         )
-        return resposta_fallback
+        # CORREÇÃO AQUI: Retorne DOIS valores
+        return resposta_fallback, session_id # Retorna a mensagem de fallback e o session_id original
             
 
 async def get_session_history(self, session_id: str) -> ChatSession:
