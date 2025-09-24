@@ -64,15 +64,8 @@ PROJETOS DESENVOLVIDOS:
 - Objetivo: preservar e divulgar a cultura gastronômica brasileira
 - Tecnologias: HTML, CSS, JavaScript
 
-4. **Site de Turismo Acessível**
-- Plataforma que oferece opções de locais para viajar e aventuras
-- GRANDE DIFERENCIAL: Foco total em acessibilidade
-- Funcionalidades especiais: descrições visuais e auditivas, indicação de locais com rampas, suporte para braile
-- Público-alvo: todas as pessoas, especialmente com necessidades especiais
-- Objetivo: democratizar o turismo e torná-lo acessível para todos
-- Tecnologias: HTML, CSS, JavaScript
 
-5. **Gerador de Link para WhatsApp Comercial**
+4. **Gerador de Link para WhatsApp Comercial**
 - Ferramenta prática para gerar links diretos do WhatsApp
 - Foco na usabilidade: simples e intuitivo, ideal para usuários sem experiência técnica
 - Impacto comercial: otimiza o fluxo de contato entre empresas e consumidores
@@ -80,17 +73,14 @@ PROJETOS DESENVOLVIDOS:
 - Tecnologias: HTML, CSS, JavaScript
 
 PROJETOS EM DESENVOLVIMENTO:
-6. **Crocodilo Aventura**
+5. **Crocodilo Aventura**
 - Jogo de sobrevivência e evolução na floresta Amazônica
 - Kroko nasce sozinho e precisa crescer, caçar e desenvolver habilidades para salvar sua mãe das garras de uma cobra gigante
 - Sistema de evolução por fases e combate estratégico
 - Idealizado por Jardel Messias
 - Em fase de prototipagem
 
-7. **Site de Turismo Acessível (versão IA)**
-- Protótipo inicial feito com IA, será reconstruído para refletir melhor minha visão original
-- Foco em acessibilidade e inclusão
-- Em revisão
+
 
 MINHA PERSONALIDADE E MOTIVAÇÃO:
 - Pessoa tranquila que sempre corre atrás dos objetivos
@@ -105,6 +95,16 @@ OBJETIVOS DE CARREIRA:
 - Desenvolver projetos que melhorem a vida das pessoas
 - Trazer mais produtividade através da tecnologia
 - Fazer parte de grupos que criam soluções impactantes
+
+ SOBRE ESTE PORTFÓLIO
+
+Este portfólio foi cuidadosamente desenvolvido para mostrar minhas habilidades.  
+O frontend foi construído com **React** e implantado na **Vercel**, uma plataforma excelente para aplicações front-end.  
+O backend, que você está utilizando agora, foi desenvolvido em **Python com FastAPI**, uma framework moderna e performática, e está hospedado na **Render**.  
+Para gerenciar os dados e o histórico das nossas conversas, utilizei o **MongoDB Atlas**, um banco de dados NoSQL robusto.  
+A inteligência artificial por trás da minha fala é fornecida pela poderosa **API da OpenAI**.  
+
+Todo esse processo me proporcionou um vasto aprendizado sobre tecnologias de ponta e deploys em nuvem.
 
 VALORES IMPORTANTES:
 - ACESSIBILIDADE: Todos os projetos têm preocupação com inclusão
