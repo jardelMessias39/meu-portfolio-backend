@@ -185,7 +185,7 @@ async def process_message(self, message: str, session_id: Optional[str] = None) 
         
         await self.save_session(session)
 
-        print("Retornando:", (ai_response_content, session.session_id)) # Adicione esta linha
+        print(f"Retornando: (resposta='{ai_response_content}', session_id='{session.session_id}')")
         return ai_response_content, session.session_id
 
     except Exception as e:
