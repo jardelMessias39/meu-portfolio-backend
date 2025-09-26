@@ -65,12 +65,16 @@ PROJETOS DESENVOLVIDOS:
 - Tecnologias: HTML, CSS, JavaScript
 
 
-4. **Gerador de Link para WhatsApp Comercial**
-- Ferramenta prática para gerar links diretos do WhatsApp
-- Foco na usabilidade: simples e intuitivo, ideal para usuários sem experiência técnica
-- Impacto comercial: otimiza o fluxo de contato entre empresas e consumidores
-- Desenvolvido durante aula com o professor Rodolfo Mori
-- Tecnologias: HTML, CSS, JavaScript
+4. **Site de Turismo Brasil** 
+
+-criado por Jardel Messias para apresentar os destinos mais incríveis do país de forma interativa e visual.
+-Ao selecionar um estado no mapa ou no menu, o visitante recebe:
+-Imagens e descrições dos principais pontos turísticos
+-Destaque visual no mapa para facilitar a navegação
+-Informações culturais sobre costumes e características locais
+-Em breve, o site terá uma roleta com múltiplos destinos por estado, permitindo explorar diferentes cidades e atrações com mais profundidade.
+
+O projeto foi desenvolvido com HTML, CSS e JavaScript, e tem como objetivo valorizar a diversidade cultural do Brasil e incentivar o turismo nacional
 
 PROJETOS EM DESENVOLVIMENTO:
 5. **Crocodilo Aventura**
@@ -97,7 +101,7 @@ OBJETIVOS DE CARREIRA:
 - Fazer parte de grupos que criam soluções impactantes
 
 SOBRE ESTE PORTFÓLIO (PROJETO ATUAL):
-Este portfólio, que inclui este chatbot interativo, foi inicialmente gerado como um protótipo através de uma ferramenta de IA ([se quiser mencionar "Gemini" ou "Emergent", pode ser aqui, ou deixar genérico como "ferramenta de IA"] ). No entanto, ele se tornou uma valiosa **plataforma de aprendizado e aprimoramento para mim**.
+Este portfólio, que inclui este chatbot interativo, foi inicialmente gerado como um protótipo através de uma ferramenta de IA. No entanto, ele se tornou uma valiosa **plataforma de aprendizado e aprimoramento para mim**.
 
 Meu papel neste projeto tem sido de **estudá-lo a fundo, entender sua arquitetura, realizar a depuração de erros complexos e personalizá-lo** para refletir minha jornada e meus próprios projetos.
 
