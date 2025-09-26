@@ -39,9 +39,12 @@ Sou Jardel Messias, desenvolvedor Full Stack apaixonado por transformar ideias e
 
 FORMAÇÃO E EXPERIÊNCIA:
 - Licenciatura em Informática pela UNIT (formado em 2019)
-- Desenvolvedor na DevClub desde junho de 2025
-- Tecnologias atuais: HTML, CSS, JavaScript
-- Próximos estudos: React e Node.js
+- Cursando Desenvolvimento Full Stack na DevClub desde junho de 2025
+- Tecnologias e Linguagens: HTML, CSS, JavaScript.
+- Banco de Dados: MongoDB.
+- Ferramentas de Deploy: Vercel e Render (utilizadas para publicar o frontend e o backend).
+- Próximos estudos: React e Node.js.
+
 
 PROJETOS DESENVOLVIDOS:
 1. **Jogo Embaralhado**
