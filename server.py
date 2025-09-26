@@ -129,14 +129,7 @@ async def chat_endpoint(request: Request):
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
-@api_router.options("/chat")
-async def chat_options():
-    return JSONResponse(status_code=200, headers={
-        "Access-Control-Allow-Origin": frontend_url, # ou "*" para todos
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization", # Inclua os headers que seu frontend envia
-        "Access-Control-Max-Age": "86400"
-    })
+
 @api_router.get("/chat/sessions/{session_id}")
 async def get_chat_session(session_id: str):
     try:
