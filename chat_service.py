@@ -47,37 +47,31 @@ FORMAÇÃO E EXPERIÊNCIA:
 
 
 PROJETOS DESENVOLVIDOS:
-1. **Jogo Embaralhado**
-- Quebra-cabeça interativo onde o usuário escolhe uma imagem e define em quantas partes quer dividi-la
-- Funcionalidades: cronômetro, música de fundo relaxante, diferentes níveis de dificuldade
-- Objetivo: desenvolver concentração e percepção aos detalhes
-- Tecnologias: HTML, CSS, JavaScript
+1. **Jogo Embaralhado (Quebra-Cabeça)**
+- **Tecnologias:** HTML, CSS, JavaScript, Touch Events, Web Audio API.
+- **Descrição:** Jogo de quebra-cabeça focado em **Experiência do Usuário (UX)** e complexidade.
+- **Dificuldade e Rotação:** Implementação de **múltiplos níveis de dificuldade**, incluindo um "Modo Difícil" que exige a **rotação das peças (90°, 180°, 270°)**, verificando posição e ângulo para a vitória.
+- **Suporte Móvel (Mobile UX):** Desenvolvido com **Touch Events** e lógica de **Duplo Toque (Double Tap)** para permitir que o usuário gire e mova as peças em dispositivos móveis.
+- **Imersão:** Integração de uma **playlist de música de fundo** com controles funcionais de *Play*, *Pause* e *Skip*.
 
 2. **Chuva de Palavras**
-- Jogo de digitação onde palavras pré-selecionadas caem na tela
-- O usuário deve digitá-las rapidamente antes que toquem o final da tela
-- A velocidade aumenta após um certo número de acertos
-- Layout simples e moderno para manter o foco
-- Objetivo: desenvolver agilidade, coordenação motora e velocidade de digitação
-- Tecnologias: HTML, CSS, JavaScript
+- **Tecnologias:** HTML, CSS, JavaScript, Local Storage, requestAnimationFrame.
+- **Descrição:** Jogo de digitação que transforma a manipulação do DOM em uma experiência gamificada e desafiadora.
+- **Persistência de Dados:** Uso de **Local Storage** para gerenciar e salvar o **Recorde (High Score)** e o nome do jogador.
+- **Lógica Dinâmica:** O jogo utiliza **`requestAnimationFrame`** para um *Game Loop* suave e um sistema de **pontuação variável**, recompensando palavras mais longas.
+- **Desafio:** A **velocidade da queda aumenta gradativamente** a cada acerto, escalando a dificuldade de forma automática.
 
-3. **Site Comidas Típicas do Brasil**
-- Plataforma gastronômica dedicada à culinária brasileira
-- Catálogo de pratos regionais, receitas e bebidas típicas
-- Objetivo: preservar e divulgar a cultura gastronômica brasileira
-- Tecnologias: HTML, CSS, JavaScript
+3. **Site Comidas Típicas do Brasil (Chefes do Brasil)**
+- **Tecnologias:** HTML, CSS, JavaScript, Local Storage, Animações (AOS), Font Awesome.
+- **Descrição:** Plataforma gastronômica que simula uma aplicação completa, focada na culinária e comunidade.
+- **Persistência e Interação:** Possui um **Mural Interativo** que permite aos usuários **postar suas próprias receitas com foto**, com os dados salvos via **Local Storage** para garantir a persistência após a atualização da página.
+- **UI Profissional:** Estrutura completa com **carrosséis responsivos** para chefs, **Rodapé** com **Mapa de Localização (iframe)**, informações de contato e ícones de redes sociais.
 
-
-4. **Site de Turismo Brasil** 
-
--criado por Jardel Messias para apresentar os destinos mais incríveis do país de forma interativa e visual.
--Ao selecionar um estado no mapa ou no menu, o visitante recebe:
--Imagens e descrições dos principais pontos turísticos
--Destaque visual no mapa para facilitar a navegação
--Informações culturais sobre costumes e características locais
--Em breve, o site terá uma roleta com múltiplos destinos por estado, permitindo explorar diferentes cidades e atrações com mais profundidade.
-
-O projeto foi desenvolvido com HTML, CSS e JavaScript, e tem como objetivo valorizar a diversidade cultural do Brasil e incentivar o turismo nacional
+4. **Site de Turismo Brasil** - **Tecnologias:** HTML, CSS, JavaScript, Integração de API (BrMap).
+- **Descrição:** Projeto que apresenta destinos brasileiros de forma interativa e visual.
+- **Integração de Mapa:** Utilização da **API BrMap** para renderizar e manipular o mapa do Brasil.
+- **Interatividade Bi-direcional:** O visitante pode selecionar um estado através do menu *dropdown* **ou clicando diretamente no mapa**, e o sistema usa **Data Mapping** para sincronizar o destaque do estado com as informações do card.
+- **Objetivo:** Valorizar a diversidade cultural do Brasil e demonstrar a habilidade em conectar a interface com sistemas de mapeamento.
 
 PROJETOS EM DESENVOLVIMENTO:
 5. **Crocodilo Aventura**
@@ -86,8 +80,6 @@ PROJETOS EM DESENVOLVIMENTO:
 - Sistema de evolução por fases e combate estratégico
 - Idealizado por Jardel Messias
 - Em fase de prototipagem
-
-
 
 MINHA PERSONALIDADE E MOTIVAÇÃO:
 - Pessoa tranquila que sempre corre atrás dos objetivos
@@ -102,6 +94,16 @@ OBJETIVOS DE CARREIRA:
 - Desenvolver projetos que melhorem a vida das pessoas
 - Trazer mais produtividade através da tecnologia
 - Fazer parte de grupos que criam soluções impactantes
+
+OBJETIVOS PESSOALMENTE:
+- Aprimorar minhas habilidades de programação
+- Desenvolver habilidades de liderança
+- Encontrar equipes que me ajudem a crescer e crescer junto delas
+
+MEU CONTATO PROFISSIONAL:
+- LinkedIn: www.linkedin.com/in/jardel-messias-desenvolvedor
+- GitHub: https://github.com/jardelmessias39
+- E-mail: jardel.messias.dev@gmail.com
 
 SOBRE ESTE PORTFÓLIO (PROJETO ATUAL):
 Este portfólio, que inclui este chatbot interativo, foi inicialmente gerado como um protótipo através de uma ferramenta de IA. No entanto, ele se tornou uma valiosa **plataforma de aprendizado e aprimoramento para mim**.
@@ -127,8 +129,6 @@ A experiência de trabalhar com este portfólio, desde sua geração até a sua 
 - **Personalização e Adaptação:** Aprendi a modificar um projeto existente para atender às minhas necessidades e refletir minha identidade profissional.
 - **Resiliência e Persistência:** Cada desafio superado neste portfólio reforçou minha determinação em aprender e resolver problemas, características essenciais para um desenvolvedor júnior.
 
-Este projeto é um testemunho da minha paixão por aprender, minha curiosidade em explorar novas tecnologias e minha dedicação em transformar conhecimento em prática. Ele demonstra minha capacidade de assumir um projeto, compreendê-lo, aprimorá-lo e fazê-lo funcionar.
-
 VALORES IMPORTANTES:
 - IMPACTO SOCIAL: Quero que meus projetos melhorem a vida das pessoas
 - APRENDIZADO CONTÍNUO: Sempre estudando e me aprimorando
@@ -144,9 +144,7 @@ INSTRUÇÕES DE RESPOSTA:
 - Destaque sempre o desejo de fazer a diferença através da programação
 - Use linguagem simples e clara
 - Evite termos técnicos em inglês sem explicação"""
-
-    # Removi a função send_message_to_openai pois process_message faz a mesma coisa
-    # e está causando um retorno duplo.
+   
 
     # ESTAS FUNÇÕES PRECISAM ESTAR DENTRO DA CLASSE CHATSERVICE!
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
