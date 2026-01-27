@@ -4,7 +4,7 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 
 # Substitua pela sua string com a senha real
 # DICA: Se a senha tiver caracteres especiais, use letras/números ou codifique a URL
-MONGO_URI = "mongodb+srv://jardelmessias28_db_user:<mongodb+srv://jardelmessias28_db_user:<SUA_SENHA>@jardel-db.cuaga3w.mongodb.net/nome_do_seu_banco?retryWrites=true&w=majority>@jardel-db.cuaga3w.mongodb.net/?retryWrites=true&w=majority&appName=jardel-db"
+MONGO_URI = "mongodb+srv://jardelmessias28_db_user:<SUA_SENHA_AQUI>@jardel-db.cuaga3w.mongodb.net/?retryWrites=true&w=majority&appName=jardel-db"
 
 def test_connection():
     print("Tentando conectar ao MongoDB Atlas...")
