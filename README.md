@@ -11,6 +11,7 @@ Este é o backend do meu portfólio pessoal, desenvolvido com **FastAPI**, **Mon
 - [Pydantic](https://docs.pydantic.dev/) — Validação de dados
 - [OpenAI API](https://platform.openai.com/docs) — Geração de respostas inteligentes
 - [Uvicorn](https://www.uvicorn.org/) — Servidor ASGI leve e rápido
+- [ElevenLabs API](https://elevenlabs.io/docs/api-reference/tts) — Síntese de fala
 
 ---
 

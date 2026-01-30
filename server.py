@@ -11,6 +11,8 @@ import traceback
 from typing import List
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from fastapi import Response
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv()
@@ -45,27 +47,50 @@ async def lifespan(app: FastAPI):
 # Create app and router
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
+# 1. Primeiro: Inclua o router no APP
 
+
+# Pega a URL do Render (Environment Variables) ou usa o seu domínio oficial
 frontend_url = os.environ.get("FRONTEND_URL", "https://meu-portfolio-jardel.vercel.app")
+
 origins = [
-   frontend_url,
-    "http://localhost:3000",                    # ← para testes locais
+    frontend_url,
+    "https://jardelmessias.com",
+    "https://meu-portfolio-jardel.vercel.app",
+    "http://localhost:3000",
     "http://localhost:5173"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],              # lista explícita
+    allow_origins=origins, # <-- Aqui você usa a lista em vez de "*"
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-
 # Rotas
 @api_router.get("/")
 async def root():
     return {"message": "API do portfólio rodando!"}
+# Mude de @app.post("/api/tts") para:
+@api_router.post("/tts") # O prefixo /api já vem do router
+async def get_audio(payload: dict):
+    texto = payload.get("text")
+    if not texto:
+        return JSONResponse(content={"error": "Sem texto"}, status_code=400)
 
+    audio_content = await chat_service.get_voice_audio(texto)
+
+    if audio_content:
+        # Importante: Adicionar headers de CORS manualmente se necessário, 
+        # mas o middleware abaixo deve resolver.
+        return Response(
+            content=audio_content, 
+            media_type="audio/mpeg",
+            headers={"Access-Control-Allow-Origin": "*"} # Força a permissão
+        )
+    
+    return JSONResponse(content={"error": "Falha no áudio"}, status_code=500)
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
@@ -79,14 +104,10 @@ async def create_status_check(input: StatusCheckCreate):
     return status_obj
 
 
-@app.middleware("http")
-async def log_origin(request: Request, call_next):
-    origin = request.headers.get("origin")
-    print("Origin da requisição:", origin)
-    response = await call_next(request)
 
-    print("Retornando:", (response, response.headers.get("X-Session-ID")))
-    return response
+
+# Certifique-se que o chat_service recebe o 'db'
+chat_service = ChatService(db) 
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: Request):
@@ -96,41 +117,22 @@ async def chat_endpoint(request: Request):
         session_id = data.get("session_id")
 
         if not message:
-            raise HTTPException(status_code=400, detail="Campo 'message' é obrigatório")
+            raise HTTPException(status_code=400, detail="Mensagem vazia")
 
-        # Início do bloco de diagnóstico
-        try:
-            # Tenta descompactar os valores normalmente
-            resposta, nova_session_id = await chat_service.process_message(
-                message=message,
-                session_id=session_id
-            )
-        except ValueError as ve:
-            # Se a descompactação falhar, pegue o retorno da função e imprima
-            returned_value = await chat_service.process_message(
-                message=message,
-                session_id=session_id
-            )
-            logger.error(f"ValueError capturado! O valor retornado foi: {returned_value} (tipo: {type(returned_value)})")
-            # Propositalmente relança o erro para que o bloco 'except' externo o pegue.
-            raise ve
-
-        # Fim do bloco de diagnóstico
-        
-        print("Resposta gerada:", resposta, "Session ID:", nova_session_id)
-        return ChatResponse(
-            response=resposta,
-            session_id=nova_session_id
+        # O process_message deve ser assíncrono (await)
+        resposta, nova_session_id = await chat_service.process_message(
+            message=message,
+            session_id=session_id
         )
+        
+        return ChatResponse(response=resposta, session_id=nova_session_id)
 
     except Exception as e:
-        traceback.print_exc()
-        logger.error(f"Erro no chat_endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
-
-
-
-@api_router.get("/chat/sessions/{session_id}")
+        print(f"🔥 ERRO NO CHAT: {traceback.format_exc()}") # Isso vai mostrar o erro real no terminal
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erro interno: {str(e)}"}
+        )
 async def get_chat_session(session_id: str):
     try:
         sessao = await chat_service.get_session_history(session_id)
@@ -154,3 +156,6 @@ async def get_chat_session(session_id: str):
 
 # Inclua o router APENAS depois de todas as rotas estarem definidas
 app.include_router(api_router)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
