@@ -10,9 +10,9 @@ openai>=1.0.0
 elevenlabs>=1.0.0
 
 # Banco de Dados (MongoDB)
-pymongo[srv]
-motor==3.3.1
-dnspython
+pymongo==4.6.3
+motor==3.4.0
+dnspython==2.6.1
 
 # Utilitários e Segurança
 pydantic>=2.6.4
