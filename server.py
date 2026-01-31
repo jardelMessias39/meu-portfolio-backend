@@ -51,19 +51,19 @@ api_router = APIRouter(prefix="/api")
 
 
 # Pega a URL do Render (Environment Variables) ou usa o seu domínio oficial
-frontend_url = os.environ.get("FRONTEND_URL", "https://meu-portfolio-jardel.vercel.app")
+frontend_url = os.environ.get("FRONTEND_URL", "meu-portfolio-jardel-yde8.vercel.app")
 
 origins = [
     frontend_url,
     "https://jardelmessias.com",
-    "https://meu-portfolio-jardel.vercel.app",
+    "meu-portfolio-jardel-yde8.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # <-- Aqui você usa a lista em vez de "*"
+    allow_origins=["*"],  # Isso aqui permite que QUALQUER link da Vercel acesse o chat
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
