@@ -7,7 +7,7 @@ httpx>=0.27.0
 
 # IA e Voz (Essenciais para o Antônio)
 openai>=1.0.0
-elevenlabs==1.10.2
+elevenlabs>=2.0.0
 
 # Banco de Dados (MongoDB)
 pymongo==4.6.3

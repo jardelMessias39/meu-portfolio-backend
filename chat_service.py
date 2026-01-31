@@ -58,31 +58,43 @@ INSTRUÇÕES:
 - Se não souber algo, use o fallback profissional."""
 
     async def get_voice_audio(self, text: str):
-        voice_id = "CwhRBWXzGAHq8TQ4Fs17"
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        api_key = os.getenv("ELEVEN_API_KEY")
-        headers = {
-            "xi-api-key": api_key,
-            "Content-Type": "application/json",
-            "accept": "audio/mpeg"
-        }
-        data = {
-            "text": text,
-            "model_id": "eleven_turbo_v2_5",
-            "voice_settings": {"stability": 0.4, "similarity_boost": 1.0}
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(url, json=data, headers=headers, timeout=30.0)
-                if response.status_code == 200:
-                    return response.content
-                else:
-                    print(f"❌ Erro ElevenLabs: {response.status_code} - {response.text}")
-                    return None
-            except Exception as e:
-                print(f"🔥 Erro de conexão: {str(e)}")
+        try:
+            import os
+            # Estes imports substituem a necessidade do httpx
+            from elevenlabs import VoiceSettings
+            from elevenlabs.client import ElevenLabs
+            
+            api_key = os.getenv("ELEVEN_API_KEY")
+            if not api_key:
+                print("❌ Chave ELEVEN_API_KEY não encontrada!")
                 return None
+
+            # O próprio cliente da ElevenLabs já gerencia a conexão
+            client = ElevenLabs(api_key=api_key)
+
+            # Aqui ele já faz o POST, passa os headers e o timeout sozinho
+            response = client.text_to_speech.convert(
+                voice_id="CwhRBWXzGAHq8TQ4Fs17",
+                model_id="eleven_turbo_v2_5",
+                text=text,
+                voice_settings=VoiceSettings(
+                    stability=0.4,
+                    similarity_boost=1.0,
+                ),
+            )
+
+            # Transforma o resultado em bytes para o seu frontend tocar
+            audio_bytes = b""
+            for chunk in response:
+                if chunk:
+                    audio_bytes += chunk
+            
+            return audio_bytes
+
+        except Exception as e:
+            # Se der qualquer erro (conexão, chave, etc), ele avisa aqui
+            print(f"🔥 Erro na ElevenLabs: {str(e)}")
+            return None
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
             session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
