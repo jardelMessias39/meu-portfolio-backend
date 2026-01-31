@@ -58,46 +58,27 @@ INSTRUÇÕES:
 - Se não souber algo, use o fallback profissional."""
 
     async def get_voice_audio(self, text: str):
-     try:
-        import os
-        from elevenlabs.client import ElevenLabs
-        
-        # Pega a chave do painel do Render
+        voice_id = "CwhRBWXzGAHq8TQ4Fs17"
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
         api_key = os.getenv("ELEVEN_API_KEY")
-        # Se quiser usar o Voice ID novo que você mostrou:
-        voice_id = "CwhRBWXzGAHq8TQ4Fs17" 
-
-        client = ElevenLabs(api_key=api_key)
-
-        # Gerando o áudio com o modelo Turbo que é mais rápido
-        audio_generator = client.generate(
-            text=text,
-            voice=voice_id,
-            model="eleven_turbo_v2_5",
-            voice_settings={
-                "stability": 0.4,
-                "similarity_boost": 1.0
-            }
-        )
-
-        # Une os pedaços do áudio em um bloco só de bytes
-        return b"".join(audio_generator)
-
-     except Exception as e:
-        print(f"❌ Erro na geração de voz: {str(e)}")
-        return None
+        headers = {
+            "xi-api-key": api_key,
+            "Content-Type": "application/json",
+            "accept": "audio/mpeg"
+        }
+        data = {
+            "text": text,
+            "model_id": "eleven_turbo_v2_5",
+            "voice_settings": {"stability": 0.4, "similarity_boost": 1.0}
+        }
 
         async with httpx.AsyncClient() as client:
             try:
-                print(f"🚀 Enviando para ElevenLabs usando a voz do Roger...")
                 response = await client.post(url, json=data, headers=headers, timeout=30.0)
-                
                 if response.status_code == 200:
-                    print("🎉 SUCESSO TOTAL! Áudio gerado e enviado para o chat.")
                     return response.content
                 else:
-                    print(f"❌ Erro na ElevenLabs: {response.status_code}")
-                    print(f"📄 Resposta: {response.text}")
+                    print(f"❌ Erro ElevenLabs: {response.status_code} - {response.text}")
                     return None
             except Exception as e:
                 print(f"🔥 Erro de conexão: {str(e)}")
