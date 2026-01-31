@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import Response
+from elevenlabs import VoiceSettings
+from elevenlabs.client import ElevenLabs
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -58,43 +60,35 @@ INSTRUÇÕES:
 - Se não souber algo, use o fallback profissional."""
 
     async def get_voice_audio(self, text: str):
+        if not self.eleven_key:
+            logger.error("❌ ELEVEN_API_KEY não está definida!")
+            return None
+
+        client = ElevenLabs(api_key=self.eleven_key)
+
         try:
-            import os
-            # Estes imports substituem a necessidade do httpx
-            from elevenlabs import VoiceSettings
-            from elevenlabs.client import ElevenLabs
-            
-            api_key = os.getenv("ELEVEN_API_KEY")
-            if not api_key:
-                print("❌ Chave ELEVEN_API_KEY não encontrada!")
-                return None
-
-            # O próprio cliente da ElevenLabs já gerencia a conexão
-            client = ElevenLabs(api_key=api_key)
-
-            # Aqui ele já faz o POST, passa os headers e o timeout sozinho
-            response = client.text_to_speech.convert(
-                voice_id="CwhRBWXzGAHq8TQ4Fs17",
-                model_id="eleven_turbo_v2_5",
-                text=text,
-                voice_settings=VoiceSettings(
-                    stability=0.4,
-                    similarity_boost=1.0,
-                ),
+            # Executa a chamada síncrona da SDK em um executor para não bloquear
+            audio_generator = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: client.text_to_speech.convert(
+                    voice_id=self.voice_id,
+                    model_id="eleven_turbo_v2_5",
+                    text=text,
+                    voice_settings=VoiceSettings(
+                        stability=0.4,
+                        similarity_boost=1.0,
+                    ),
+                )
             )
 
-            # Transforma o resultado em bytes para o seu frontend tocar
-            audio_bytes = b""
-            for chunk in response:
-                if chunk:
-                    audio_bytes += chunk
-            
+            audio_bytes = b"".join(audio_generator)
+            logger.info("✅ Áudio gerado com sucesso na ElevenLabs")
             return audio_bytes
 
         except Exception as e:
-            # Se der qualquer erro (conexão, chave, etc), ele avisa aqui
-            print(f"🔥 Erro na ElevenLabs: {str(e)}")
+            logger.exception(f"🔥 Erro ao gerar áudio na ElevenLabs: {e}")
             return None
+
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
             session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
