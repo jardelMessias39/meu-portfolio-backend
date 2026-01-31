@@ -82,14 +82,15 @@ async def get_audio(payload: dict):
     audio_content = await chat_service.get_voice_audio(texto)
 
     if audio_content:
-        # Importante: Adicionar headers de CORS manualmente se necessário, 
-        # mas o middleware abaixo deve resolver.
         return Response(
             content=audio_content, 
             media_type="audio/mpeg",
-            headers={"Access-Control-Allow-Origin": "*"} # Força a permissão
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
         )
-    
     return JSONResponse(content={"error": "Falha no áudio"}, status_code=500)
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
