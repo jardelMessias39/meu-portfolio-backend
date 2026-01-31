@@ -28,11 +28,9 @@ class ChatService:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # Use o ID do Adam (ou outro que você copiou do seu painel)
-        self.voice_id = "F9w7aaEjfT09qV89OdY8" 
-        self.eleven_key = "sk_c9caf8f48cd804e58b293624f58ffa22827e44a84ac2fd7f".strip()
-        
-        
+        # Agora ele vai pegar a chave que você salvou no painel do Render!
+        self.eleven_key = os.getenv("ELEVEN_API_KEY")
+        self.voice_id = os.getenv("VOICE_ID", "F9w7aaEjfT09qV89OdY8")
         
         # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
         self.system_message = """Você é o assistente virtual do Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.
