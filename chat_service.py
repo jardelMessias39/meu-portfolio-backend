@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import Response
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
+import asyncio
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -61,33 +62,28 @@ INSTRUÇÕES:
 
     async def get_voice_audio(self, text: str):
         if not self.eleven_key:
-            logger.error("❌ ELEVEN_API_KEY não está definida!")
+            logger.error("ELEVEN_API_KEY não definida")
             return None
 
         client = ElevenLabs(api_key=self.eleven_key)
 
         try:
-            # Executa a chamada síncrona da SDK em um executor para não bloquear
             audio_generator = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: client.text_to_speech.convert(
                     voice_id=self.voice_id,
                     model_id="eleven_turbo_v2_5",
                     text=text,
-                    voice_settings=VoiceSettings(
-                        stability=0.4,
-                        similarity_boost=1.0,
-                    ),
+                    voice_settings=VoiceSettings(stability=0.4, similarity_boost=1.0),
                 )
             )
-
             audio_bytes = b"".join(audio_generator)
-            logger.info("✅ Áudio gerado com sucesso na ElevenLabs")
+            logger.info("Áudio gerado com sucesso")
             return audio_bytes
-
         except Exception as e:
-            logger.exception(f"🔥 Erro ao gerar áudio na ElevenLabs: {e}")
+            logger.exception(f"Erro ao gerar áudio: {e}")
             return None
+
 
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
