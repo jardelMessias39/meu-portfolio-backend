@@ -58,22 +58,34 @@ INSTRUÇÕES:
 - Se não souber algo, use o fallback profissional."""
 
     async def get_voice_audio(self, text: str):
-        # O ID que você encontrou na sua conta!
-        voice_id = "CwhRBWXzGAHq8TQ4Fs17" 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+     try:
+        import os
+        from elevenlabs.client import ElevenLabs
         
-        headers = {
-            "xi-api-key": self.eleven_key.strip(),
-            "Content-Type": "application/json"
-        }
-        data = {
-            "text": text,
-            "model_id": "eleven_turbo_v2_5",  # Esse modelo é 3x mais rápido que o outro
-            "voice_settings": {
-                "stability": 0.4,           # Menos estabilidade = fala mais rápida/dinâmica
-                "similarity_boost": 1.0     # Garante que a voz não mude o tom
+        # Pega a chave do painel do Render
+        api_key = os.getenv("ELEVEN_API_KEY")
+        # Se quiser usar o Voice ID novo que você mostrou:
+        voice_id = "CwhRBWXzGAHq8TQ4Fs17" 
+
+        client = ElevenLabs(api_key=api_key)
+
+        # Gerando o áudio com o modelo Turbo que é mais rápido
+        audio_generator = client.generate(
+            text=text,
+            voice=voice_id,
+            model="eleven_turbo_v2_5",
+            voice_settings={
+                "stability": 0.4,
+                "similarity_boost": 1.0
             }
-        }
+        )
+
+        # Une os pedaços do áudio em um bloco só de bytes
+        return b"".join(audio_generator)
+
+     except Exception as e:
+        print(f"❌ Erro na geração de voz: {str(e)}")
+        return None
 
         async with httpx.AsyncClient() as client:
             try:
