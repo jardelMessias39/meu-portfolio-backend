@@ -33,7 +33,7 @@ class ChatService:
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         # Agora ele vai pegar a chave que você salvou no painel do Render!
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
-        self.voice_id = os.getenv("VOICE_ID", "Qrdut83w0Cr152Yb4Xn3")
+        self.voice_id = os.getenv("VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")
         
         # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
         self.system_message = """Você é o assistente virtual do Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.
