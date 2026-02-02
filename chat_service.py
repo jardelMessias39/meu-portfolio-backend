@@ -60,30 +60,14 @@ INSTRUÇÕES:
 - Nunca descreva gestos como *sorrindo*, *piscando*. Apenas o texto para ser falado.
 - Se não souber algo, use o fallback profissional."""
 
-    async def get_voice_audio(self, text: str):
-        if not self.eleven_key:
-            logger.error("ELEVEN_API_KEY não definida")
-            return None
-
-        client = ElevenLabs(api_key=self.eleven_key)
-
+    def get_voice_audio(text):
         try:
-            audio_generator = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: client.text_to_speech.convert(
-                    voice_id=self.voice_id,
-                    model_id="eleven_turbo_v2_5",
-                    text=text,
-                    voice_settings=VoiceSettings(stability=0.4, similarity_boost=1.0),
-                )
-            )
-            audio_bytes = b"".join(audio_generator)
-            logger.info("Áudio gerado com sucesso")
-            return audio_bytes
+            # Sua chamada atual da ElevenLabs que está dando erro 401
+            audio_generator = client.text_to_speech.convert(...)
+            return b"".join(audio_generator)
         except Exception as e:
-            logger.exception(f"Erro ao gerar áudio: {e}")
-            return None
-
+            print(f"Erro ElevenLabs: {e}")
+            return None  # Retorna None em vez de quebrar o servidor!
 
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
