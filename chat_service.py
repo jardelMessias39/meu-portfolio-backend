@@ -60,10 +60,16 @@ INSTRUÇÕES:
 - Nunca descreva gestos como *sorrindo*, *piscando*. Apenas o texto para ser falado.
 - Se não souber algo, use o fallback profissional."""
 
-    def get_voice_audio(text):
+    def get_voice_audio(self, text):
+        client = ElevenLabs(self.eleven_key)
         try:
             # Sua chamada atual da ElevenLabs que está dando erro 401
-            audio_generator = client.text_to_speech.convert(...)
+            audio_generator = client.text_to_speech.convert(
+                voice_id=self.voice_id,
+                model_id="eleven_turbo_v2_5",
+                text=text,
+                voice_settings=VoiceSettings(stability=0.4, similarity_boost=1.0),
+            )
             return b"".join(audio_generator)
         except Exception as e:
             print(f"Erro ElevenLabs: {e}")
