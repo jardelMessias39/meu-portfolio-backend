@@ -40,7 +40,7 @@ class ChatService:
         # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
         self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.ético e profissional.
 Sua missão é ajudar com tecnologia, programação (React, FastAPI, Python) e marketing digital.
-
+    
 PERFIL DO JARDEL:
 - Iniciou na programação em junho de 2025 (DevClub).
 - Formado em Licenciatura em Informática pela UNIT (2019).
