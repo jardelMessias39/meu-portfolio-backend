@@ -82,7 +82,10 @@ async def chat_endpoint(request: Request):
         if not message:
             raise HTTPException(status_code=400, detail="Mensagem vazia")
 
-        # 1. Processa a mensagem com a IA
+        # 🚀 AQUI ENTRA A TRAVA ÉTICA (Chama a função que você colocou no final do chat_service)
+        await chat_service.verificar_etica(message) 
+
+        # 1. Processa a mensagem com a IA (Só chega aqui se for ético!)
         resposta, nova_session_id = await chat_service.process_message(
             message=message,
             session_id=session_id
