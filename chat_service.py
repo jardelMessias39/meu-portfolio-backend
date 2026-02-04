@@ -36,22 +36,6 @@ class ChatService:
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")
         
-        # 1. TRAVAS DE SEGURANÇA (A tua lista de bloqueio)
-    TEMAS_BLOQUEADOS = [
-        "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
-        "derrubar sistema", "gerar cpf", "senha", "dark web"
-    ]
-
-    def verificar_etica(mensagem: str):
-        mensagem_lower = mensagem.lower()
-        for termo in TEMAS_BLOQUEADOS:
-            if termo in mensagem_lower:
-                # Isso interrompe o código aqui mesmo e avisa o usuário
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Acesso Negado: Esta consulta viola as normas de segurança e ética do sistema."
-                )
-
         
         # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
         self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.ético e profissional.
@@ -84,6 +68,22 @@ INSTRUÇÕES:
 - Seja breve e direto para poupar créditos de áudio.
 - Nunca descreva gestos como *sorrindo*, *piscando*. Apenas o texto para ser falado.
 - Se não souber algo, use o fallback profissional."""
+
+        # 1. TRAVAS DE SEGURANÇA (A tua lista de bloqueio)
+    TEMAS_BLOQUEADOS = [
+        "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
+        "derrubar sistema", "gerar cpf", "senha", "dark web"
+    ]
+
+    def verificar_etica(mensagem: str):
+        mensagem_lower = mensagem.lower()
+        for termo in TEMAS_BLOQUEADOS:
+            if termo in mensagem_lower:
+                # Isso interrompe o código aqui mesmo e avisa o usuário
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Acesso Negado: Esta consulta viola as normas de segurança e ética do sistema."
+                )
 
     def get_voice_audio(self, text):
         client = ElevenLabs(self.eleven_key)
