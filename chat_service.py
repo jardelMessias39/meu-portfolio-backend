@@ -116,7 +116,9 @@ INSTRUÇÕES:
         )
 
     async def process_message(self, message: str, session_id: Optional[str] = None) -> tuple[str, str]:
+        # 1. Verifica ética primeiro
         verificar_etica(message)
+        
         try:
             session = await self.get_or_create_session(session_id)
             session.messages.append(ChatMessage(role="user", content=message))
@@ -131,23 +133,25 @@ INSTRUÇÕES:
             
             ai_content = response.choices[0].message.content
             session.messages.append(ChatMessage(role="assistant", content=ai_content))
+            
+            # Salva a sessão do chat (mensagens do histórico)
             await self.save_session(session)
+
+            # 🚀 MÁGICA: SALVAR HISTÓRICO INDIVIDUAL NO BANCO
+            try:
+                await self.db.conversas_portfolio.insert_one({
+                    "data": datetime.now(timezone.utc),
+                    "usuario": message,
+                    "bot": ai_content,
+                    "session_id": session.session_id,
+                    "origem": "web_portfolio"
+                })
+            except Exception as db_err:
+                logger.error(f"Erro ao salvar histórico no banco: {db_err}")
+
             return ai_content, session.session_id
+
         except Exception as e:
             logger.error(f"Erro no process_message: {e}")
-            return "Opa! Tive um problema técnico. Pode repetir?", session_id
-        
-      
-        # 3. SALVAR HISTÓRICO NO BANCO (Mágica aqui!)
-        try:
-            # Criamos uma coleção chamada 'conversas_portfolio'
-            await db.conversas_portfolio.insert_one({
-                "data": datetime.now(),
-                "usuario": message,
-                "bot": resposta,
-                "session_id": nova_session_id,
-                "origem": "web_portfolio"
-            })
-        except Exception as db_err:
-            logger.error(f"Erro ao salvar no banco: {db_err}")
+            # Se der erro, retornamos o ID da sessão atual para não quebrar o frontend
             return "Opa! Tive um problema técnico. Pode repetir?", session_id
