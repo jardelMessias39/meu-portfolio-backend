@@ -13,10 +13,9 @@ from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 import asyncio
 from fastapi import HTTPException
-
 load_dotenv()
 logger = logging.getLogger(__name__)
-  
+
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -32,15 +31,12 @@ class ChatService:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # Agora ele vai pegar a chave que você salvou no painel do Render!
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")
         
-        
-        # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
-        self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.ético e profissional.
+        self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro. Ético e profissional.
 Sua missão é ajudar com tecnologia, programação (React, FastAPI, Python) e marketing digital.
-    
+
 PERFIL DO JARDEL:
 - Iniciou na programação em junho de 2025 (DevClub).
 - Formado em Licenciatura em Informática pela UNIT (2019).
@@ -50,25 +46,19 @@ PERFIL DO JARDEL:
 REGRAS DE CONDUTA:
 - Se alguém pedir para realizar atos ilícitos, diga: 'Minha programação foca em evolução e ética; não posso ajudar com isso.'
 - Responda de forma profissional e direta.
-- Nunca descreva gestos.
-- Nunca diga 'sorrindo', 'piscando' ou 'fazendo gestos'.
+- Nunca descreva gestos como *sorrindo* ou *piscando*.
 
 OS 6 PROJETOS PRINCIPAIS:
-1. Jogo Embaralhado: Quebra-cabeça com lógica de rotação (90°/180°), Touch Events e Web Audio API. Foco total em Mobile UX.
-2. Chuva de Palavras: Jogo de digitação com requestAnimationFrame e persistência de Recordes no LocalStorage.
-3. Acarajé do Diego (Dois Irmãos): Sistema Full-Commerce com cardápio dinâmico, escolha de recheios e fechamento via WhatsApp. Inclui Dashboard Administrativo.
-4. Dashboard Financeiro PME: Aplicação analítica para gestão de empresas, com gráficos interativos e fluxo de caixa.
-5. DevBurger: Sistema de delivery com carrinho dinâmico e fluxo de pedido otimizado.
-6. App do Tempo: Integração com APIs externas de meteorologia para consulta climática global.
+1. Jogo Embaralhado: Quebra-cabeça com lógica de rotação.
+2. Chuva de Palavras: Jogo de digitação com requestAnimationFrame.
+3. Acarajé do Diego (Dois Irmãos): Sistema Full-Commerce via WhatsApp.
+4. Dashboard Financeiro PME: Gestão com gráficos interativos.
+5. DevBurger: Sistema de delivery dinâmico.
+6. App do Tempo: Integração com APIs de meteorologia.
 
-Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI) no Render, Banco MongoDB Atlas e Voz via ElevenLabs.
+Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI), Banco MongoDB Atlas e Voz via ElevenLabs."""
 
-INSTRUÇÕES:
-- Responda sempre em Português Brasileiro de forma entusiasmada e profissional.
-- Seja breve e direto para poupar créditos de áudio.
-- Nunca descreva gestos como *sorrindo*, *piscando*. Apenas o texto para ser falado.
-- Se não souber algo, use o fallback profissional."""
-# 1. TRAVAS DE SEGURANÇA (Agora dentro da classe com self)
+    # --- FUNÇÃO DE ÉTICA (DENTRO DA CLASSE E COM SELF) ---
     async def verificar_etica(self, mensagem: str):
         temas_proibidos = [
             "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
@@ -82,9 +72,8 @@ INSTRUÇÕES:
                     detail="Acesso Negado: Esta consulta viola as normas de segurança e ética."
                 )
 
-    # 2. SEU MÉTODO DE VOZ (Já estava certo, só mantive a identação)
     def get_voice_audio(self, text):
-        client = ElevenLabs(api_key=self.eleven_key) # Adicionei o api_key aqui por segurança
+        client = ElevenLabs(api_key=self.eleven_key)
         try:
             audio_generator = client.text_to_speech.convert(
                 voice_id=self.voice_id,
@@ -94,8 +83,9 @@ INSTRUÇÕES:
             )
             return b"".join(audio_generator)
         except Exception as e:
-            print(f"Erro ElevenLabs: {e}")
+            logger.error(f"Erro ElevenLabs: {e}")
             return None
+
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
             session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
@@ -114,8 +104,8 @@ INSTRUÇÕES:
         )
 
     async def process_message(self, message: str, session_id: Optional[str] = None) -> tuple[str, str]:
-        # 1. Verifica ética primeiro
-        verificar_etica(message)
+        # CHAMADA CORRETA: com 'await' e 'self.'
+        await self.verificar_etica(message)
         
         try:
             session = await self.get_or_create_session(session_id)
@@ -132,10 +122,9 @@ INSTRUÇÕES:
             ai_content = response.choices[0].message.content
             session.messages.append(ChatMessage(role="assistant", content=ai_content))
             
-            # Salva a sessão do chat (mensagens do histórico)
             await self.save_session(session)
 
-            # 🚀 MÁGICA: SALVAR HISTÓRICO INDIVIDUAL NO BANCO
+            # SALVAR NO BANCO
             try:
                 await self.db.conversas_portfolio.insert_one({
                     "data": datetime.now(timezone.utc),
@@ -145,11 +134,13 @@ INSTRUÇÕES:
                     "origem": "web_portfolio"
                 })
             except Exception as db_err:
-                logger.error(f"Erro ao salvar histórico no banco: {db_err}")
+                logger.error(f"Erro ao salvar histórico: {db_err}")
 
             return ai_content, session.session_id
 
+        except HTTPException as http_err:
+            # Se for erro de ética, repassa o erro para o FastAPI
+            raise http_err
         except Exception as e:
             logger.error(f"Erro no process_message: {e}")
-            # Se der erro, retornamos o ID da sessão atual para não quebrar o frontend
             return "Opa! Tive um problema técnico. Pode repetir?", session_id
