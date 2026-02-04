@@ -16,22 +16,7 @@ from fastapi import HTTPException
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-  # 1. TRAVAS DE SEGURANÇA (A tua lista de bloqueio)
-TEMAS_BLOQUEADOS = [
-    "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
-    "derrubar sistema", "gerar cpf", "senha", "dark web"
-]
-
-def verificar_etica(mensagem: str):
-    mensagem_lower = mensagem.lower()
-    for termo in TEMAS_BLOQUEADOS:
-        if termo in mensagem_lower:
-            # Isso interrompe o código aqui mesmo e avisa o usuário
-            raise HTTPException(
-                status_code=400, 
-                detail="Acesso Negado: Esta consulta viola as normas de segurança e ética do sistema."
-            )
-
+  
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -50,6 +35,23 @@ class ChatService:
         # Agora ele vai pegar a chave que você salvou no painel do Render!
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "TX3LPaxmHKxFdv7VOQHJ")
+        
+        # 1. TRAVAS DE SEGURANÇA (A tua lista de bloqueio)
+    TEMAS_BLOQUEADOS = [
+        "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
+        "derrubar sistema", "gerar cpf", "senha", "dark web"
+    ]
+
+    def verificar_etica(mensagem: str):
+        mensagem_lower = mensagem.lower()
+        for termo in TEMAS_BLOQUEADOS:
+            if termo in mensagem_lower:
+                # Isso interrompe o código aqui mesmo e avisa o usuário
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Acesso Negado: Esta consulta viola as normas de segurança e ética do sistema."
+                )
+
         
         # TUDO DENTRO DA VARIÁVEL SYSTEM_MESSAGE
         self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro.ético e profissional.
