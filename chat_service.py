@@ -68,27 +68,24 @@ INSTRUÇÕES:
 - Seja breve e direto para poupar créditos de áudio.
 - Nunca descreva gestos como *sorrindo*, *piscando*. Apenas o texto para ser falado.
 - Se não souber algo, use o fallback profissional."""
-
-        # 1. TRAVAS DE SEGURANÇA (A tua lista de bloqueio)
-    TEMAS_BLOQUEADOS = [
-        "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
-        "derrubar sistema", "gerar cpf", "senha", "dark web"
-    ]
-
-    def verificar_etica(mensagem: str):
+# 1. TRAVAS DE SEGURANÇA (Agora dentro da classe com self)
+    async def verificar_etica(self, mensagem: str):
+        temas_proibidos = [
+            "hackear", "cartão de crédito", "ataque", "vírus", "bomba", 
+            "derrubar sistema", "gerar cpf", "senha", "dark web"
+        ]
         mensagem_lower = mensagem.lower()
-        for termo in TEMAS_BLOQUEADOS:
+        for termo in temas_proibidos:
             if termo in mensagem_lower:
-                # Isso interrompe o código aqui mesmo e avisa o usuário
                 raise HTTPException(
                     status_code=400, 
-                    detail="Acesso Negado: Esta consulta viola as normas de segurança e ética do sistema."
+                    detail="Acesso Negado: Esta consulta viola as normas de segurança e ética."
                 )
 
+    # 2. SEU MÉTODO DE VOZ (Já estava certo, só mantive a identação)
     def get_voice_audio(self, text):
-        client = ElevenLabs(self.eleven_key)
+        client = ElevenLabs(api_key=self.eleven_key) # Adicionei o api_key aqui por segurança
         try:
-            # Sua chamada atual da ElevenLabs que está dando erro 401
             audio_generator = client.text_to_speech.convert(
                 voice_id=self.voice_id,
                 model_id="eleven_turbo_v2_5",
@@ -98,8 +95,7 @@ INSTRUÇÕES:
             return b"".join(audio_generator)
         except Exception as e:
             print(f"Erro ElevenLabs: {e}")
-            return None  # Retorna None em vez de quebrar o servidor!
-
+            return None
     async def get_or_create_session(self, session_id: str = None) -> ChatSession:
         if session_id:
             session_data = await self.db.chat_sessions.find_one({"session_id": session_id})
