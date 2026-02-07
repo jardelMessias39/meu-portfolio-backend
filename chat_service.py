@@ -32,7 +32,7 @@ class ChatService:
         self.db = db
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
-        self.voice_id = os.getenv("VOICE_ID", "nPczCjzI2devNBz1zQrb")
+        self.voice_id = os.getenv("VOICE_ID", "jNL5glo56wiESjRGPEPO")
         
         self.system_message = """Você é o assistente virtual, criado pelo desenvolvedor Jardel Messias, um desenvolvedor júnior Full Stack brasileiro. Ético e profissional.
 Sua missão é ajudar com tecnologia, programação (React, FastAPI, Python) e marketing digital.
