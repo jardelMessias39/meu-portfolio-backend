@@ -13,6 +13,7 @@ from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 import asyncio
 from fastapi import HTTPException
+from starlette.concurrency import run_in_threadpool
 load_dotenv()
 logger = logging.getLogger(__name__)
 
@@ -73,8 +74,9 @@ Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI), Banco MongoDB A
                 )
 
     async def get_voice_audio(self, text):
-        client = ElevenLabs(api_key=self.eleven_key)
-        try:
+    # Definimos uma função interna para rodar a ElevenLabs de forma síncrona
+        def generate():
+            client = ElevenLabs(api_key=self.eleven_key)
             audio_generator = client.text_to_speech.convert(
                 voice_id=self.voice_id,
                 model_id="eleven_turbo_v2_5",
@@ -82,6 +84,11 @@ Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI), Banco MongoDB A
                 voice_settings=VoiceSettings(stability=0.4, similarity_boost=1.0),
             )
             return b"".join(audio_generator)
+
+        try:
+            # Aqui está o segredo: rodar a função síncrona dentro do loop assíncrono
+            audio_bytes = await run_in_threadpool(generate)
+            return audio_bytes
         except Exception as e:
             logger.error(f"Erro ElevenLabs: {e}")
             return None
