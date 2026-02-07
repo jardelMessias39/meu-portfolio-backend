@@ -72,7 +72,7 @@ Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI), Banco MongoDB A
                     detail="Acesso Negado: Esta consulta viola as normas de segurança e ética."
                 )
 
-    def get_voice_audio(self, text):
+    async def get_voice_audio(self, text):
         client = ElevenLabs(api_key=self.eleven_key)
         try:
             audio_generator = client.text_to_speech.convert(
