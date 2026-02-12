@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from models import StatusCheck, StatusCheckCreate, ChatRequest, ChatResponse
 from chat_service import ChatService
 from typing import List
+import httpx
 
 # Configurações iniciais
 ROOT_DIR = Path(__file__).parent
@@ -126,9 +127,76 @@ async def create_status_check(input: StatusCheckCreate):
     await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
+# --- NOVAS ROTAS DO CLIMA (ADAPTADAS PARA PYTHON/FASTAPI) ---
+
+@api_router.get("/clima")
+async def get_clima(cidade: str):
+    chave = os.environ.get('OPENWEATHER_KEY')
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            resposta = await client.get(url)
+            if resposta.status_code != 200:
+                raise HTTPException(status_code=404, detail="Cidade não encontrada")
+            return resposta.json()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/previsao")
+async def get_previsao(lat: float, lon: float):
+    chave = os.environ.get('OPENWEATHER_KEY')
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={chave}&units=metric&lang=pt_br"
+    
+    async with httpx.AsyncClient() as client:
+        resposta = await client.get(url)
+        dados = resposta.json()
+        
+        dias_agrupados = {}
+        for item in dados.get('list', []):
+            data = item['dt_txt'].split(' ')[0]
+            if data not in dias_agrupados:
+                # Criando o mesmo formato que seu JS espera
+                dt_obj = datetime.strptime(data, "%Y-%m-%d")
+                dias_agrupados[data] = {
+                    "dataLabel": dt_obj.strftime("%a").replace(".", "").upper(),
+                    "temp_max": item['main']['temp_max'],
+                    "temp_min": item['main']['temp_min'],
+                    "umidade": item['main']['humidity'],
+                    "chuva": item.get('pop', 0),
+                    "icon": item['weather'][0]['icon'],
+                    "climaPrincipal": item['weather'][0]['main'],
+                    "fullDate": data
+                }
+            else:
+                dias_agrupados[data]["temp_max"] = max(dias_agrupados[data]["temp_max"], item['main']['temp_max'])
+                dias_agrupados[data]["temp_min"] = min(dias_agrupados[data]["temp_min"], item['main']['temp_min'])
+
+        return list(dias_agrupados.values())
+
+@api_router.post("/sugerir")
+async def sugerir_clima(payload: dict):
+    clima = payload.get("clima")
+    chave_ia = os.environ.get('GROQ_KEY')
+    
+    prompt = f"O clima em {clima['cidade']} está {clima['descricao']} com {clima['temp']}. Que roupa devo usar? Responda em até 3 frases."
+    
+    async with httpx.AsyncClient() as client:
+        headers = {"Authorization": f"Bearer {chave_ia}", "Content-Type": "application/json"}
+        corpo = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        res = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=corpo)
+        data = res.json()
+        return {"sugestao": data['choices'][0]['message']['content']}
+
 # Inclusão do Router e Inicialização
 app.include_router(api_router)
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    
+   
