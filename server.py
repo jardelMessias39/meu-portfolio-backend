@@ -151,14 +151,16 @@ async def get_previsao(lat: float, lon: float):
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
         dados = resposta.json()
-        
-        dias_agrupados = {}
+
+        previsao_final = []
+
         for item in dados.get('list', []):
-            data = item['dt_txt'].split(' ')[0]
-            if data not in dias_agrupados:
-                # Criando o mesmo formato que seu JS espera
+            # PEGAR SOMENTE 12:00:00
+            if "12:00:00" in item['dt_txt']:
+                data = item['dt_txt'].split(' ')[0]
                 dt_obj = datetime.strptime(data, "%Y-%m-%d")
-                dias_agrupados[data] = {
+
+                previsao_final.append({
                     "dataLabel": dt_obj.strftime("%a").replace(".", "").upper(),
                     "temp_max": item['main']['temp_max'],
                     "temp_min": item['main']['temp_min'],
@@ -166,13 +168,12 @@ async def get_previsao(lat: float, lon: float):
                     "chuva": item.get('pop', 0),
                     "icon": item['weather'][0]['icon'],
                     "climaPrincipal": item['weather'][0]['main'],
+                    "weather": item['weather'],  # <-- IMPORTANTE para o som
                     "fullDate": data
-                }
-            else:
-                dias_agrupados[data]["temp_max"] = max(dias_agrupados[data]["temp_max"], item['main']['temp_max'])
-                dias_agrupados[data]["temp_min"] = min(dias_agrupados[data]["temp_min"], item['main']['temp_min'])
+                })
 
-        return list(dias_agrupados.values())
+        return previsao_final
+
 
 @api_router.post("/sugerir")
 async def sugerir_clima(payload: dict):
