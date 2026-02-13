@@ -147,17 +147,23 @@ async def get_clima(cidade: str):
 async def get_previsao(lat: float, lon: float):
     chave = os.environ.get('OPENWEATHER_KEY')
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={chave}&units=metric&lang=pt_br"
-    
+
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
         dados = resposta.json()
 
+        hoje = datetime.utcnow().strftime("%Y-%m-%d")
+
         previsao_final = []
 
         for item in dados.get('list', []):
-            # PEGAR SOMENTE 12:00:00
             if "12:00:00" in item['dt_txt']:
                 data = item['dt_txt'].split(' ')[0]
+
+                # 🔥 REMOVE O DIA DE HOJE
+                if data == hoje:
+                    continue
+
                 dt_obj = datetime.strptime(data, "%Y-%m-%d")
 
                 previsao_final.append({
@@ -168,7 +174,7 @@ async def get_previsao(lat: float, lon: float):
                     "chuva": item.get('pop', 0),
                     "icon": item['weather'][0]['icon'],
                     "climaPrincipal": item['weather'][0]['main'],
-                    "weather": item['weather'],  # <-- IMPORTANTE para o som
+                    "weather": item['weather'],
                     "fullDate": data
                 })
 
