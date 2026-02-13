@@ -13,6 +13,7 @@ from models import StatusCheck, StatusCheckCreate, ChatRequest, ChatResponse
 from chat_service import ChatService
 from typing import List
 import httpx
+import pytz
 
 # Configurações iniciais
 ROOT_DIR = Path(__file__).parent
@@ -152,7 +153,9 @@ async def get_previsao(lat: float, lon: float):
         resposta = await client.get(url)
         dados = resposta.json()
 
-        hoje = datetime.utcnow().strftime("%Y-%m-%d")
+        # Adiciona o fuso horário de Brasília
+        tz_brasilia = pytz.timezone('America/Sao_Paulo')
+        hoje = datetime.now(tz_brasilia).strftime("%Y-%m-%d")
 
         previsao_final = []
 
@@ -160,9 +163,14 @@ async def get_previsao(lat: float, lon: float):
             if "12:00:00" in item['dt_txt']:
                 data = item['dt_txt'].split(' ')[0]
 
-                # 🔥 REMOVE O DIA DE HOJE
-                if data == hoje:
+                # pega data atual baseada na API
+                data_atual_api = dados['list'][0]['dt_txt'].split(' ')[0]
+
+                if data == data_atual_api:
                     continue
+
+            if data > hoje:
+                data = item['dt_txt'].split(' ')[0]
 
                 dt_obj = datetime.strptime(data, "%Y-%m-%d")
 
