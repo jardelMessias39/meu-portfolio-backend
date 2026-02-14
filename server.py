@@ -128,11 +128,18 @@ async def create_status_check(input: StatusCheckCreate):
     await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
-# --- NOVAS ROTAS DO CLIMA (ADAPTADAS PARA PYTHON/FASTAPI) ---
+
+
+# Dicionário para tradução manual dos dias (Garante PT-BR independente do servidor)
+DIAS_TRADUCAO = {
+    "Mon": "SEG", "Tue": "TER", "Wed": "QUA", "Thu": "QUI", 
+    "Fri": "SEX", "Sat": "SÁB", "Sun": "DOM"
+}
 
 @api_router.get("/clima")
 async def get_clima(cidade: str):
     chave = os.environ.get('OPENWEATHER_KEY')
+    # Adicionado lang=pt_br para a descrição vir em português
     url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
     
     async with httpx.AsyncClient() as client:
@@ -152,38 +159,44 @@ async def get_previsao(lat: float, lon: float):
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
         dados = resposta.json()
-
         previsao_final = []
 
-        for item in dados.get('list', []):
-            # pegamos apenas horário fixo do meio do dia
-            if "12:00:00" in item['dt_txt']:
-                data = item['dt_txt'].split(' ')[0]
+        # Usamos um set para garantir que não repetimos o mesmo dia no loop
+        dias_processados = set()
 
-                dt_obj = datetime.strptime(data, "%Y-%m-%d")
+        for item in dados.get('list', []):
+            data_completa = item['dt_txt']
+            data_dia = data_completa.split(' ')[0] # Pega yyyy-mm-dd
+
+            # Pega apenas um horário (ex: 12h) e evita duplicados
+            if "12:00:00" in data_completa and data_dia not in dias_processados:
+                dt_obj = datetime.strptime(data_dia, "%Y-%m-%d")
+                
+                # Tradução manual robusta
+                dia_en = dt_obj.strftime("%a")
+                dia_pt = DIAS_TRADUCAO.get(dia_en, dia_en.upper())
 
                 previsao_final.append({
-                    "dataLabel": dt_obj.strftime("%a").replace(".", "").upper(),
+                    "dataLabel": dia_pt,
                     "temp_max": item['main']['temp_max'],
-                    "temp_min": item['main']['temp_min'],
-                    "umidade": item['main']['humidity'],
-                    "chuva": item.get('pop', 0),
                     "icon": item['weather'][0]['icon'],
-                    "climaPrincipal": item['weather'][0]['main'],
-                    "weather": item['weather'],  # importante pro som
-                    "fullDate": data
+                    "climaPrincipal": item['weather'][0]['main'], # Crucial para o SOM
+                    "weather": item['weather'], # Necessário para o front identificar o clima
+                    "chuva": item.get('pop', 0),
+                    "fullDate": data_dia
                 })
+                dias_processados.add(data_dia)
 
         return previsao_final
-
-
 
 @api_router.post("/sugerir")
 async def sugerir_clima(payload: dict):
     clima = payload.get("clima")
     chave_ia = os.environ.get('GROQ_KEY')
     
-    prompt = f"O clima em {clima['cidade']} está {clima['descricao']} com {clima['temp']}. Que roupa devo usar? Responda em até 3 frases."
+    # Prompt otimizado para a IA ser direta
+    prompt = (f"O clima em {clima['cidade']} está {clima['descricao']} com {clima['temp']}. "
+              f"Sugira roupas ideais para este clima em português. Responda em até 2 frases curtas.")
     
     async with httpx.AsyncClient() as client:
         headers = {"Authorization": f"Bearer {chave_ia}", "Content-Type": "application/json"}
@@ -194,13 +207,3 @@ async def sugerir_clima(payload: dict):
         res = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=corpo)
         data = res.json()
         return {"sugestao": data['choices'][0]['message']['content']}
-
-# Inclusão do Router e Inicialização
-app.include_router(api_router)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-    
-    
-   
