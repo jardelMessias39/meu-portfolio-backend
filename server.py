@@ -163,26 +163,29 @@ async def get_previsao(lat: float, lon: float):
 
         dias_processados = set()
 
+        # Pegamos a lista de previsões da API
         for item in dados.get('list', []):
             data_completa = item['dt_txt']
-            data_dia = data_completa.split(' ')[0]
+            data_dia = data_completa.split(' ')[0] # Extrai yyyy-mm-dd
 
+            # Filtramos para pegar apenas um horário por dia (meio-dia)
             if "12:00:00" in data_completa and data_dia not in dias_processados:
                 dt_obj = datetime.strptime(data_dia, "%Y-%m-%d")
                 
+                # Tradução do dia da semana (ex: Mon -> SEG)
                 dia_en = dt_obj.strftime("%a")
                 dia_pt = DIAS_TRADUCAO.get(dia_en, dia_en.upper())
 
-                # Montando o objeto com todos os dados necessários para o frontend
+                # AQUI ESTÁ O QUE NÃO PODE FALTAR PARA O FRONTEND:
                 previsao_final.append({
-                    "dataLabel": dia_pt,
+                    "dataLabel": dia_pt,           # Aparece no topo e nos cards
                     "temp_max": item['main']['temp_max'],
                     "icon": item['weather'][0]['icon'],
-                    "climaPrincipal": item['weather'][0]['main'], 
-                    "weather": item['weather'], 
-                    "chuva": item.get('pop', 0),
-                    "fullDate": data_dia,
-                    "vento": item['wind']['speed'],
+                    "climaPrincipal": item['weather'][0]['main'], # Pro som funcionar
+                    "weather": item['weather'],    # Lista completa do clima
+                    "chuva": item.get('pop', 0),   # Porcentagem de água
+                    "fullDate": data_dia,          # Usado para o filtro de "voltar pra baixo"
+                    "vento": item['wind']['speed'], # CORREÇÃO DO VENTO
                     "umidade": item['main']['humidity'],
                     "pressao": item['main']['pressure'],
                     "sensacao": item['main']['feels_like']
@@ -190,7 +193,6 @@ async def get_previsao(lat: float, lon: float):
                 dias_processados.add(data_dia)
 
         return previsao_final
-
 @api_router.post("/sugerir")
 async def sugerir_clima(payload: dict):
     clima = payload.get("clima")
