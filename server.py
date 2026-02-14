@@ -161,29 +161,31 @@ async def get_previsao(lat: float, lon: float):
         dados = resposta.json()
         previsao_final = []
 
-        # Usamos um set para garantir que não repetimos o mesmo dia no loop
         dias_processados = set()
 
         for item in dados.get('list', []):
             data_completa = item['dt_txt']
-            data_dia = data_completa.split(' ')[0] # Pega yyyy-mm-dd
+            data_dia = data_completa.split(' ')[0]
 
-            # Pega apenas um horário (ex: 12h) e evita duplicados
             if "12:00:00" in data_completa and data_dia not in dias_processados:
                 dt_obj = datetime.strptime(data_dia, "%Y-%m-%d")
                 
-                # Tradução manual robusta
                 dia_en = dt_obj.strftime("%a")
                 dia_pt = DIAS_TRADUCAO.get(dia_en, dia_en.upper())
 
+                # Montando o objeto com todos os dados necessários para o frontend
                 previsao_final.append({
                     "dataLabel": dia_pt,
                     "temp_max": item['main']['temp_max'],
                     "icon": item['weather'][0]['icon'],
-                    "climaPrincipal": item['weather'][0]['main'], # Crucial para o SOM
-                    "weather": item['weather'], # Necessário para o front identificar o clima
+                    "climaPrincipal": item['weather'][0]['main'], 
+                    "weather": item['weather'], 
                     "chuva": item.get('pop', 0),
-                    "fullDate": data_dia
+                    "fullDate": data_dia,
+                    "vento": item['wind']['speed'],
+                    "umidade": item['main']['humidity'],
+                    "pressao": item['main']['pressure'],
+                    "sensacao": item['main']['feels_like']
                 })
                 dias_processados.add(data_dia)
 
