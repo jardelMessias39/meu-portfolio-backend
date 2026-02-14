@@ -144,12 +144,10 @@ async def get_clima(cidade: str):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @api_router.get("/previsao")
 async def get_previsao(lat: float, lon: float):
     chave = os.environ.get('OPENWEATHER_KEY')
-    url = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&appid={chave}&units=metric&lang=pt_br&exclude=minutely,hourly,alerts"
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={chave}&units=metric&lang=pt_br"
 
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
@@ -157,25 +155,27 @@ async def get_previsao(lat: float, lon: float):
 
         previsao_final = []
 
-        for item in dados.get("daily", []):
-            dt_obj = datetime.fromtimestamp(item["dt"])
+        for item in dados.get('list', []):
+            # pegamos apenas horário fixo do meio do dia
+            if "12:00:00" in item['dt_txt']:
+                data = item['dt_txt'].split(' ')[0]
 
-            previsao_final.append({
-                "dataLabel": dt_obj.strftime("%a").replace(".", "").upper(),
-                "temp_max": item["temp"]["max"],
-                "temp_min": item["temp"]["min"],
-                "umidade": item["humidity"],
-                "chuva": item.get("pop", 0),
-                "icon": item["weather"][0]["icon"],
-                "climaPrincipal": item["weather"][0]["main"],
-                "weather": item["weather"],
-                "fullDate": dt_obj.strftime("%Y-%m-%d")
-            })
+                dt_obj = datetime.strptime(data, "%Y-%m-%d")
+
+                previsao_final.append({
+                    "dataLabel": dt_obj.strftime("%a").replace(".", "").upper(),
+                    "temp_max": item['main']['temp_max'],
+                    "temp_min": item['main']['temp_min'],
+                    "umidade": item['main']['humidity'],
+                    "chuva": item.get('pop', 0),
+                    "icon": item['weather'][0]['icon'],
+                    "climaPrincipal": item['weather'][0]['main'],
+                    "weather": item['weather'],  # importante pro som
+                    "fullDate": data
+                })
 
         return previsao_final
 
-
-    
 
 
 @api_router.post("/sugerir")
