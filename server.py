@@ -132,6 +132,7 @@ DIAS_TRADUCAO = {
 @api_router.get("/clima")
 async def get_clima(cidade: str):
     chave = os.environ.get('OPENWEATHER_KEY')
+    
     # Esta URL busca o clima MOMENTÂNEO
     url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
     
