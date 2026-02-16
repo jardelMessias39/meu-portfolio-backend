@@ -136,10 +136,11 @@ DIAS_TRADUCAO = {
     "Fri": "SEX", "Sat": "SÁB", "Sun": "DOM"
 }
 
+# 1. ROTA DO CLIMA ATUAL (Busca principal)
 @api_router.get("/clima")
 async def get_clima(cidade: str):
     chave = os.environ.get('OPENWEATHER_KEY')
-    # Use 'cidade' diretamente aqui:
+    # Esta URL busca o clima MOMENTÂNEO
     url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
     
     async with httpx.AsyncClient() as client:
@@ -150,44 +151,40 @@ async def get_clima(cidade: str):
             return resposta.json()
         except Exception as e:
             return {"erro": str(e)}
+
+# 2. ROTA DA PREVISÃO (Cards de baixo)
 @api_router.get("/previsao")
 async def get_previsao(lat: float, lon: float):
     chave = os.environ.get('OPENWEATHER_KEY')
+    # Esta URL busca a previsão para os PRÓXIMOS DIAS (5 days / 3 hours)
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={chave}&units=metric&lang=pt_br"
 
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
         dados = resposta.json()
         previsao_final = []
-
         dias_processados = set()
 
-        # Pegamos a lista de previsões da API
         for item in dados.get('list', []):
             data_completa = item['dt_txt']
-            data_dia = data_completa.split(' ')[0] # Extrai yyyy-mm-dd
+            data_dia = data_completa.split(' ')[0]
 
-            # Filtramos para pegar apenas um horário por dia (meio-dia)
+            # Pegamos apenas a previsão do meio-dia para cada dia
             if "12:00:00" in data_completa and data_dia not in dias_processados:
                 dt_obj = datetime.strptime(data_dia, "%Y-%m-%d")
-                
-                # Tradução do dia da semana (ex: Mon -> SEG)
-                dia_en = dt_obj.strftime("%a")
-                dia_pt = DIAS_TRADUCAO.get(dia_en, dia_en.upper())
+                dia_pt = DIAS_TRADUCAO.get(dt_obj.strftime("%a"), dt_obj.strftime("%a").upper())
 
-                # AQUI ESTÁ O QUE NÃO PODE FALTAR PARA O FRONTEND:
                 previsao_final.append({
-                    "dataLabel": dia_pt,           # Aparece no topo e nos cards
+                    "dataLabel": dia_pt,
                     "temp_max": item['main']['temp_max'],
-                    "icon": item['weather'][0]['icon'],
-                    "climaPrincipal": item['weather'][0]['main'], # Pro som funcionar
-                    "weather": item['weather'],    # Lista completa do clima
-                    "chuva": item.get('pop', 0),   # Porcentagem de água
-                    "fullDate": data_dia,          # Usado para o filtro de "voltar pra baixo"
-                    "vento": item['wind']['speed'], # CORREÇÃO DO VENTO
+                    "sensacao": item['main']['feels_like'], # Sensação térmica aqui!
                     "umidade": item['main']['humidity'],
                     "pressao": item['main']['pressure'],
-                    "sensacao": item['main']['feels_like']
+                    "vento": item['wind']['speed'],         # Vento aqui!
+                    "icon": item['weather'][0]['icon'],
+                    "climaPrincipal": item['weather'][0]['main'],
+                    "weather": item['weather'],
+                    "fullDate": data_dia
                 })
                 dias_processados.add(data_dia)
 
