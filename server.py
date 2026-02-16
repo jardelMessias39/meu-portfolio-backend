@@ -130,7 +130,7 @@ async def create_status_check(input: StatusCheckCreate):
     await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
-
+app.include_router(api_router)
 
 # Dicionário para tradução manual dos dias (Garante PT-BR independente do servidor)
 DIAS_TRADUCAO = {
@@ -212,4 +212,4 @@ async def sugerir_clima(payload: dict):
         data = res.json()
         return {"sugestao": data['choices'][0]['message']['content']}
    
-    app.include_router(api_router)
+ 
