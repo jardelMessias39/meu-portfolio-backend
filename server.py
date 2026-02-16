@@ -42,6 +42,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
+app.include_router(api_router)
+
 
 # Configuração de CORS (Liberado para facilitar no portfólio)
 app.add_middleware(
@@ -147,7 +149,7 @@ async def get_clima(cidade: str):
         try:
             resposta = await client.get(url)
             if resposta.status_code != 200:
-                return {"erro": "Cidade não encontrada"}
+                raise HTTPException(status_code=404, detail="Cidade não encontrada")
             return resposta.json()
         except Exception as e:
             return {"erro": str(e)}
@@ -161,6 +163,8 @@ async def get_previsao(lat: float, lon: float):
 
     async with httpx.AsyncClient() as client:
         resposta = await client.get(url)
+        if resposta.status_code != 200:
+         raise HTTPException(status_code=500, detail="Erro ao buscar previsão")
         dados = resposta.json()
         previsao_final = []
         dias_processados = set()
