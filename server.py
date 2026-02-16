@@ -140,7 +140,7 @@ DIAS_TRADUCAO = {
 async def get_clima(cidade: str):
     chave = os.environ.get('OPENWEATHER_KEY')
     # Adicionado lang=pt_br para a descrição vir em português
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={cidadeFormatada}&appid={chave}&units=metric&lang=pt_br"
     
     async with httpx.AsyncClient() as client:
         try:
