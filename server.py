@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
-app.include_router(api_router)
+
 
 
 # Configuração de CORS (Liberado para facilitar no portfólio)
@@ -211,3 +211,5 @@ async def sugerir_clima(payload: dict):
         res = await client.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=corpo)
         data = res.json()
         return {"sugestao": data['choices'][0]['message']['content']}
+   
+    app.include_router(api_router)
