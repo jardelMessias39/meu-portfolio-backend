@@ -43,18 +43,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
-
-
-# Configuração de CORS (Liberado para facilitar no portfólio)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # --- ROTAS ---
+
 
 @api_router.get("/")
 async def root():
@@ -130,7 +120,7 @@ async def create_status_check(input: StatusCheckCreate):
     await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
-app.include_router(api_router)
+
 
 # Dicionário para tradução manual dos dias (Garante PT-BR independente do servidor)
 DIAS_TRADUCAO = {
@@ -213,3 +203,14 @@ async def sugerir_clima(payload: dict):
         return {"sugestao": data['choices'][0]['message']['content']}
    
  
+
+# Configuração de CORS (Liberado para facilitar no portfólio)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router)
