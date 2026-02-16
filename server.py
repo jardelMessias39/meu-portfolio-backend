@@ -137,21 +137,19 @@ DIAS_TRADUCAO = {
 }
 
 @api_router.get("/clima")
-async def get_clima(cidade: str): # A variável aqui se chama 'cidade'
+async def get_clima(cidade: str):
     chave = os.environ.get('OPENWEATHER_KEY')
-    
-    # CORREÇÃO: Usar 'cidade' em vez de 'cidadeFormatada'
+    # Use 'cidade' diretamente aqui:
     url = f"https://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={chave}&units=metric&lang=pt_br"
     
     async with httpx.AsyncClient() as client:
-       try:
+        try:
             resposta = await client.get(url)
             if resposta.status_code != 200:
-                # Isso ajuda a debugar se a API do OpenWeather recusar o nome
-                return {"erro": "Cidade não encontrada", "status": resposta.status_code}
+                return {"erro": "Cidade não encontrada"}
             return resposta.json()
-       except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            return {"erro": str(e)}
 @api_router.get("/previsao")
 async def get_previsao(lat: float, lon: float):
     chave = os.environ.get('OPENWEATHER_KEY')
