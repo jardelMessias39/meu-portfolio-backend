@@ -43,6 +43,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
 
+# ✅ ROTA DE HEALTHCHECK (acorda servidor)
+@api_router.get("/health")
+async def health():
+    return {"status": "ok"}
+
 # --- ROTAS ---
 
 
