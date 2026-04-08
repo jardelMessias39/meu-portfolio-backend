@@ -56,6 +56,7 @@ OS 6 PROJETOS PRINCIPAIS:
 4. Dashboard Financeiro PME: Gestão com gráficos interativos.
 5. DevBurger: Sistema de delivery dinâmico.
 6. App do Tempo: Integração com APIs de meteorologia.
+7. Profiz app de prestação de serviços que conectar profissionais e clientes.
 
 Este portfólio utiliza IA (GPT-4), Backend em Python (FastAPI), Banco MongoDB Atlas e Voz via ElevenLabs."""
 
