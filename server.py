@@ -72,36 +72,22 @@ async def get_audio(payload: dict):
     return JSONResponse(content={"error": "Falha no áudio"}, status_code=500)
 
 @api_router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: Request):
+async def chat_endpoint(request: ChatRequest):
     try:
-        data = await request.json()
-        message = data.get("message")
-        session_id = data.get("session_id")
+        message = request.message
+        session_id = request.session_id
 
-        if not message:
+        if not message or not message.strip():
             raise HTTPException(status_code=400, detail="Mensagem vazia")
 
-        # 🚀 AQUI ENTRA A TRAVA ÉTICA (Chama a função que você colocou no final do chat_service)
-        await chat_service.verificar_etica(message) 
-
-        # 1. Processa a mensagem com a IA (Só chega aqui se for ético!)
+        # A verificação de ética já ocorre no chat_service, mas manter aqui não quebra (porém é redundante).
+        # Vamos manter o processamento unificado no chat_service, que já lida com a ética e o salvamento.
+        
+        # 1. Processa a mensagem com a IA (Ética + Histórico Limitado + Salvamento ocorrem lá)
         resposta, nova_session_id = await chat_service.process_message(
             message=message,
             session_id=session_id
         )
-
-        # 2. SALVAR HISTÓRICO NO BANCO (Mágica aqui!)
-        try:
-            # Criamos uma coleção chamada 'conversas_portfolio'
-            await db.conversas_portfolio.insert_one({
-                "data": datetime.now(),
-                "usuario": message,
-                "bot": resposta,
-                "session_id": nova_session_id,
-                "origem": "web_portfolio"
-            })
-        except Exception as db_err:
-            logger.error(f"Erro ao salvar no banco: {db_err}")
 
         return ChatResponse(response=resposta, session_id=nova_session_id)
 
@@ -210,10 +196,12 @@ async def sugerir_clima(payload: dict):
    
  
 
-# Configuração de CORS (Liberado para facilitar no portfólio)
+# Configuração de CORS (Variável de ambiente para produção, fallback liberado para dev)
+cors_origins = os.environ.get("CORS_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
