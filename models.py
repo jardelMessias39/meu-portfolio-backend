@@ -3,9 +3,21 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 
+class ToolCallFunction(BaseModel):
+    name: str
+    arguments: str
+
+class ToolCall(BaseModel):
+    id: str
+    type: str = "function"
+    function: ToolCallFunction
+
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
+    role: str  # "user", "assistant" or "tool"
+    content: Optional[str] = None
+    tool_calls: Optional[List[ToolCall]] = None
+    tool_call_id: Optional[str] = None
+    name: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class ChatSession(BaseModel):

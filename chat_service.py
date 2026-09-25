@@ -12,19 +12,11 @@ from fastapi import Response
 import asyncio
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
+from tools_executor import ToolExecutor
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class ChatSession(BaseModel):
-    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    messages: List[ChatMessage] = []
+from models import ChatMessage, ChatSession
 
 class ChatService:
     def __init__(self, db: AsyncIOMotorClient):
@@ -32,6 +24,7 @@ class ChatService:
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "e755Nqcfi6ASYtz1LfJ3")
+        self.tool_executor = ToolExecutor()
         
         self.system_message = """Você é o Consultor Digital da plataforma oficial de Jardel Messias, Software Engineer especializado em IA e Automação.
 
@@ -55,9 +48,9 @@ Biografia profissional:
 Sempre movido pela vontade de transformar ideias em soluções reais. Utiliza software, inteligência artificial e automação para ajudar empresas a reduzir trabalho manual, organizar processos e criar produtos digitais que geram valor real.
 
 Trajetória:
-- 2023: Início com aplicações web clássicas, lógica de programação, JavaScript, HTML/CSS.
-- 2024: Aplicações completas com React, Node.js, integrações de APIs de terceiros, painéis operacionais.
-- 2025: Softwares SaaS sob medida, portais de agendamento, aplicativos móveis com Flutter, integrações de pagamento.
+- 2025: Início com aplicações web clássicas Maio/2025, lógica de programação, JavaScript, HTML/CSS.
+- 2025: Aplicações completas com React, Node.js, integrações de APIs de terceiros, painéis operacionais.
+- 2026: Softwares SaaS sob medida, portais de agendamento, aplicativos móveis com Flutter, integrações de pagamento.
 - 2026: Agentes de conversação autônomos integrados a fluxos corporativos reais de WhatsApp, automação de processos com IA.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -173,8 +166,8 @@ REGRAS DE CONDUTA (OBRIGATÓRIAS)
 4. Ao identificar INTENÇÃO COMERCIAL (o visitante quer contratar, tem um projeto, quer orçamento), conduza naturalmente para contato: "Para avançarmos com seu projeto, o melhor caminho é uma conversa direta com Jardel. Você pode falar pelo WhatsApp: (79) 99806-1093 ou pelo e-mail jardel.messias.dev@gmail.com."
 5. Faça PERGUNTAS QUALIFICADORAS quando pertinente: "Qual é o principal processo que você quer automatizar?" ou "Qual setor é sua empresa?" — isso ajuda a indicar a solução mais adequada.
 6. Se alguém pedir para realizar atos ilícitos, responda: "Este canal é voltado exclusivamente para soluções tecnológicas de negócio. Não posso ajudar com isso."
-7. Mantenha respostas DIRETAS e OBJETIVAS. Sem rodeios. Sem emojis em excesso. Sem linguagem informal demais.
-8. Projetos privados: mencione que o código-fonte é confidencial, mas descreva livremente o problema resolvido, a solução e os resultados."""
+8. Projetos privados: mencione que o código-fonte é confidencial, mas descreva livremente o problema resolvido, a solução e os resultados.
+9. IMPORTANTE: Antes de registrar um lead, agendar ou chamar a ferramenta de criação de lead, exija e pergunte explicitamente pelo nome, e-mail, telefone e descrição do projeto/necessidade. Não invente nenhum desses dados para satisfazer os parâmetros da ferramenta."""
 
     # --- FUNÇÃO DE ÉTICA (DENTRO DA CLASSE E COM SELF) ---
     async def verificar_etica(self, mensagem: str):
@@ -220,21 +213,63 @@ REGRAS DE CONDUTA (OBRIGATÓRIAS)
             session = await self.get_or_create_session(session_id)
             session.messages.append(ChatMessage(role="user", content=message))
             
-            # Limitar histórico enviado ao modelo às últimas 10 trocas (20 mensagens).
-            # O histórico completo permanece salvo no MongoDB; apenas a janela enviada à API é limitada.
-            MAX_HISTORY_MESSAGES = 20
-            recent_messages = session.messages[-MAX_HISTORY_MESSAGES:]
-
-            messages_to_openai = [{"role": "system", "content": self.system_message}] + \
-                                 [{"role": msg.role, "content": msg.content} for msg in recent_messages]
-
-            response = await self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages_to_openai
-            )
+            max_iterations = 3
+            current_iteration = 0
             
-            ai_content = response.choices[0].message.content
-            session.messages.append(ChatMessage(role="assistant", content=ai_content))
+            while current_iteration < max_iterations:
+                current_iteration += 1
+                
+                # Limitar histórico enviado ao modelo às últimas 10 trocas (20 mensagens).
+                MAX_HISTORY_MESSAGES = 20
+                recent_messages = session.messages[-MAX_HISTORY_MESSAGES:]
+                
+                messages_to_openai = [{"role": "system", "content": self.system_message}]
+                for msg in recent_messages:
+                    messages_to_openai.append(msg.dict(exclude_none=True, exclude={"timestamp"}))
+                    
+                response = await self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages_to_openai,
+                    tools=self.tool_executor.get_tools()
+                )
+                
+                response_message = response.choices[0].message
+                
+                # Se não houver tool calls, é uma resposta normal
+                if not response_message.tool_calls:
+                    ai_content = response_message.content
+                    session.messages.append(ChatMessage(role="assistant", content=ai_content))
+                    break
+                
+                # Tratar tool_calls
+                tool_calls_data = []
+                for tc in response_message.tool_calls:
+                    tool_calls_data.append({
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}
+                    })
+                
+                session.messages.append(ChatMessage(
+                    role="assistant", 
+                    tool_calls=tool_calls_data,
+                    content=response_message.content  # pode ser None
+                ))
+                
+                # Executar as tools mockadas
+                for tc in response_message.tool_calls:
+                    tool_result = await self.tool_executor.execute_tool(tc.function.name, tc.function.arguments)
+                    session.messages.append(ChatMessage(
+                        role="tool",
+                        content=tool_result,
+                        tool_call_id=tc.id,
+                        name=tc.function.name
+                    ))
+            
+            # Garantir que temos um ai_content
+            if current_iteration >= max_iterations and not getattr(response_message, 'content', None):
+                ai_content = "Desculpe, tive um problema ao processar sua solicitação."
+                session.messages.append(ChatMessage(role="assistant", content=ai_content))
             
             await self.save_session(session)
 
