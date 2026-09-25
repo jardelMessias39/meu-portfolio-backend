@@ -16,13 +16,13 @@ class ToolExecutor:
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "name": { "type": "string" },
+                        "nome": { "type": "string" },
                         "email": { "type": "string" },
-                        "phone": { "type": "string" },
-                        "company": { "type": "string" },
-                        "need": { "type": "string" }
+                        "telefone": { "type": "string" },
+                        "empresa": { "type": "string" },
+                        "necessidade_identificada": { "type": "string" }
                     },
-                    "required": ["name", "email", "phone", "need"]
+                    "required": ["nome", "email", "telefone", "necessidade_identificada"]
                 }
             }
         }

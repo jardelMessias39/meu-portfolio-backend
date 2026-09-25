@@ -17,11 +17,20 @@ class MockResponse:
 def test_tool_executor_201_success():
     async def run():
         executor = ToolExecutor()
-        args = json.dumps({"name": "João", "email": "joao@email.com", "phone": "123", "company": "Empresa", "need": "Site"})
+        args = json.dumps({"nome": "João", "email": "joao@email.com", "telefone": "123", "empresa": "Empresa", "necessidade_identificada": "Site"})
         
         with patch('httpx.AsyncClient.post') as mock_post:
             mock_post.return_value = MockResponse(201, json.dumps({"ok": True, "data": {"id": "123"}}))
             result_str = await executor.execute_tool("create_lead", args)
+            
+            # Verificar se os campos foram passados corretamente para o post HTTP
+            posted_json = mock_post.call_args[1]['json']
+            assert 'nome' in posted_json
+            assert 'telefone' in posted_json
+            assert 'necessidade_identificada' in posted_json
+            assert 'name' not in posted_json
+            assert 'phone' not in posted_json
+            
             result = json.loads(result_str)
             assert result["ok"] is True
     asyncio.run(run())
