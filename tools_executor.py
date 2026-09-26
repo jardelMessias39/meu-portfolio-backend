@@ -40,8 +40,13 @@ class ToolExecutor:
                 api_key = os.environ.get("CONSULTOR_API_KEY")
                 
                 if not integration_url or not api_key:
-                    logger.error("Variaveis de ambiente INTEGRATION_LAYER_URL ou CONSULTOR_API_KEY nao estao definidas.")
-                    return json.dumps({"ok": False, "error": {"message": "Configuracao de integracao ausente."}})
+                    logger.error(f"Variaveis de ambiente nao estao definidas. URL existe: {bool(integration_url)}, KEY existe: {bool(api_key)}")
+                    return json.dumps({
+                        "ok": False, 
+                        "error": {
+                            "message": f"Configuracao de integracao ausente. INTEGRATION_LAYER_URL carregada: {bool(integration_url)}. CONSULTOR_API_KEY carregada: {bool(api_key)}."
+                        }
+                    })
                 
                 url = f"{integration_url.rstrip('/')}/backend/v1/tools/create_lead"
                 headers = {
