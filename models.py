@@ -10,7 +10,10 @@ class ToolCallFunction(BaseModel):
 class ToolCall(BaseModel):
     id: str
     type: str = "function"
-    function: ToolCallFunction
+    function: Optional[ToolCallFunction] = None
+    name: Optional[str] = None
+    arguments: Optional[str] = None
+    metadata: Optional[dict] = None
 
 class ChatMessage(BaseModel):
     role: str  # "user", "assistant" or "tool"

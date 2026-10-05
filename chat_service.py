@@ -2,7 +2,7 @@ import os
 import uuid
 import logging
 import httpx
-from openai import AsyncOpenAI
+from llm_provider import OpenAIProvider, get_llm_provider
 from dotenv import load_dotenv
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -21,7 +21,7 @@ from models import ChatMessage, ChatSession
 class ChatService:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
-        self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.llm_provider = get_llm_provider()
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "e755Nqcfi6ASYtz1LfJ3")
         self.tool_executor = ToolExecutor()
@@ -226,51 +226,48 @@ Confirme os dados antes de executar as ferramentas. Não invente data ou horári
                 MAX_HISTORY_MESSAGES = 20
                 recent_messages = session.messages[-MAX_HISTORY_MESSAGES:]
                 
-                messages_to_openai = [{"role": "system", "content": self.system_message}]
-                for msg in recent_messages:
-                    messages_to_openai.append(msg.dict(exclude_none=True, exclude={"timestamp"}))
-                    
-                response = await self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=messages_to_openai,
+                llm_response = await self.llm_provider.generate_response(
+                    system_message=self.system_message,
+                    messages=recent_messages,
                     tools=self.tool_executor.get_tools()
                 )
                 
-                response_message = response.choices[0].message
-                
                 # Se não houver tool calls, é uma resposta normal
-                if not response_message.tool_calls:
-                    ai_content = response_message.content
+                if not llm_response.tool_calls:
+                    ai_content = llm_response.content or "Desculpe, o provedor de IA está temporariamente indisponível. Por favor, tente novamente em instantes."
                     session.messages.append(ChatMessage(role="assistant", content=ai_content))
                     break
                 
                 # Tratar tool_calls
                 tool_calls_data = []
-                for tc in response_message.tool_calls:
+                for tc in llm_response.tool_calls:
                     tool_calls_data.append({
                         "id": tc.id,
-                        "type": tc.type,
-                        "function": {"name": tc.function.name, "arguments": tc.function.arguments}
+                        "type": "function",
+                        "name": tc.name,
+                        "arguments": tc.arguments,
+                        "metadata": getattr(tc, "metadata", None),
+                        "function": {"name": tc.name, "arguments": tc.arguments}
                     })
                 
                 session.messages.append(ChatMessage(
                     role="assistant", 
                     tool_calls=tool_calls_data,
-                    content=response_message.content  # pode ser None
+                    content=llm_response.content  # pode ser None
                 ))
                 
                 # Executar as tools mockadas
-                for tc in response_message.tool_calls:
-                    tool_result = await self.tool_executor.execute_tool(tc.function.name, tc.function.arguments)
+                for tc in llm_response.tool_calls:
+                    tool_result = await self.tool_executor.execute_tool(tc.name, tc.arguments)
                     session.messages.append(ChatMessage(
-                        role="tool",
+                        role="tool_result",
                         content=tool_result,
                         tool_call_id=tc.id,
-                        name=tc.function.name
+                        name=tc.name
                     ))
             
             # Garantir que temos um ai_content
-            if current_iteration >= max_iterations and not getattr(response_message, 'content', None):
+            if current_iteration >= max_iterations and not llm_response.content:
                 ai_content = "Desculpe, tive um problema ao processar sua solicitação."
                 session.messages.append(ChatMessage(role="assistant", content=ai_content))
             
