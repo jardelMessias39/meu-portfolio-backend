@@ -226,11 +226,25 @@ Confirme os dados antes de executar as ferramentas. Não invente data ou horári
                 MAX_HISTORY_MESSAGES = 20
                 recent_messages = session.messages[-MAX_HISTORY_MESSAGES:]
                 
-                llm_response = await self.llm_provider.generate_response(
-                    system_message=self.system_message,
-                    messages=recent_messages,
-                    tools=self.tool_executor.get_tools()
-                )
+                logger.info(f"[CHAT] provider = {type(self.llm_provider).__name__}")
+                model_name = getattr(self.llm_provider, 'model', 'unknown')
+                logger.info(f"[CHAT] model = {model_name}")
+                logger.info("[CHAT] calling LLM")
+                
+                try:
+                    llm_response = await self.llm_provider.generate_response(
+                        system_message=self.system_message,
+                        messages=recent_messages,
+                        tools=self.tool_executor.get_tools()
+                    )
+                    logger.info(f"[CHAT] LLM returned. content='{llm_response.content}', tools={len(llm_response.tool_calls) if llm_response.tool_calls else 0}")
+                    if llm_response.tool_calls:
+                        for idx, tc in enumerate(llm_response.tool_calls):
+                            logger.info(f"[CHAT] Tool {idx}: name={tc.name}, args={tc.arguments}, metadata={getattr(tc, 'metadata', None)}")
+                except Exception as ex:
+                    import traceback
+                    logger.error(f"[CHAT] LLM EXCEPTION: {traceback.format_exc()}")
+                    raise ex
                 
                 # Se não houver tool calls, é uma resposta normal
                 if not llm_response.tool_calls:
