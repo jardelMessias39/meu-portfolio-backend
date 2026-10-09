@@ -8,6 +8,24 @@ from openai import AsyncOpenAI
 from models import ChatMessage
 
 logger = logging.getLogger(__name__)
+from enum import Enum
+
+class LLMErrorType(Enum):
+    PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+    RATE_LIMITED = "RATE_LIMITED"
+    AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
+    INVALID_REQUEST = "INVALID_REQUEST"
+    PROVIDER_NOT_FOUND = "PROVIDER_NOT_FOUND"
+    PROVIDER_ERROR = "PROVIDER_ERROR"
+    TIMEOUT = "TIMEOUT"
+
+class LLMProviderError(Exception):
+    def __init__(self, error_type: LLMErrorType, status_code: int, message: str, original_exc: Exception = None):
+        self.error_type = error_type
+        self.status_code = status_code
+        self.message = message
+        self.original_exc = original_exc
+        super().__init__(self.message)
 
 class GenericToolCall(BaseModel):
     id: str
@@ -69,11 +87,26 @@ class OpenAIProvider(BaseLLMProvider):
         for msg in messages:
             messages_to_openai.append(self._convert_message_to_openai(msg))
             
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages_to_openai,
-            tools=tools if tools else None
-        )
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages_to_openai,
+                tools=tools if tools else None
+            )
+        except Exception as e:
+            error_str = str(e).lower()
+            if "503" in error_str or "502" in error_str:
+                raise LLMProviderError(LLMErrorType.PROVIDER_UNAVAILABLE, 503, str(e), e)
+            elif "429" in error_str or "rate limit" in error_str:
+                raise LLMProviderError(LLMErrorType.RATE_LIMITED, 429, str(e), e)
+            elif "401" in error_str or "403" in error_str:
+                raise LLMProviderError(LLMErrorType.AUTHENTICATION_ERROR, 401, str(e), e)
+            elif "400" in error_str:
+                raise LLMProviderError(LLMErrorType.INVALID_REQUEST, 400, str(e), e)
+            elif "timeout" in error_str:
+                raise LLMProviderError(LLMErrorType.TIMEOUT, 408, str(e), e)
+            else:
+                raise LLMProviderError(LLMErrorType.PROVIDER_ERROR, 500, str(e), e)
         
         response_message = response.choices[0].message
         
@@ -190,8 +223,19 @@ class GeminiProvider(BaseLLMProvider):
                 config=config
             )
         except Exception as e:
-            logger.error(f"Gemini API error: {e}")
-            return LLMResponse(content=None, tool_calls=None)
+            error_str = str(e).lower()
+            if "503" in error_str or "unavailable" in error_str:
+                raise LLMProviderError(LLMErrorType.PROVIDER_UNAVAILABLE, 503, str(e), e)
+            elif "429" in error_str or "quota" in error_str:
+                raise LLMProviderError(LLMErrorType.RATE_LIMITED, 429, str(e), e)
+            elif "400" in error_str or "invalid" in error_str:
+                raise LLMProviderError(LLMErrorType.INVALID_REQUEST, 400, str(e), e)
+            elif "401" in error_str or "403" in error_str or "permission" in error_str:
+                raise LLMProviderError(LLMErrorType.AUTHENTICATION_ERROR, 401, str(e), e)
+            elif "timeout" in error_str:
+                raise LLMProviderError(LLMErrorType.TIMEOUT, 408, str(e), e)
+            else:
+                raise LLMProviderError(LLMErrorType.PROVIDER_ERROR, 500, str(e), e)
         
         generic_tool_calls = None
         text_content = None
@@ -230,8 +274,11 @@ class GeminiProvider(BaseLLMProvider):
             tool_calls=generic_tool_calls
         )
 
-def get_llm_provider() -> BaseLLMProvider:
-    provider_name = os.getenv("LLM_PROVIDER", "openai").lower()
+def get_llm_provider(provider_name: str = None) -> BaseLLMProvider:
+    if not provider_name:
+        provider_name = os.getenv("LLM_PROVIDER", "openai").lower()
+    else:
+        provider_name = provider_name.lower()
     
     if provider_name == "openai":
         return OpenAIProvider()

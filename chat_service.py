@@ -2,7 +2,8 @@ import os
 import uuid
 import logging
 import httpx
-from llm_provider import OpenAIProvider, get_llm_provider
+from llm_provider import OpenAIProvider, get_llm_provider, LLMProviderError
+from llm_orchestrator import LLMOrchestrator
 from dotenv import load_dotenv
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -21,7 +22,7 @@ from models import ChatMessage, ChatSession
 class ChatService:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
-        self.llm_provider = get_llm_provider()
+        self.orchestrator = LLMOrchestrator()
         self.eleven_key = os.getenv("ELEVEN_API_KEY")
         self.voice_id = os.getenv("VOICE_ID", "e755Nqcfi6ASYtz1LfJ3")
         self.tool_executor = ToolExecutor()
@@ -224,15 +225,13 @@ Confirme os dados antes de executar as ferramentas. Não invente data ou horári
                 
                 # Limitar histórico enviado ao modelo às últimas 10 trocas (20 mensagens).
                 MAX_HISTORY_MESSAGES = 20
-                recent_messages = session.messages[-MAX_HISTORY_MESSAGES:]
-                
-                logger.info(f"[CHAT] provider = {type(self.llm_provider).__name__}")
-                model_name = getattr(self.llm_provider, 'model', 'unknown')
-                logger.info(f"[CHAT] model = {model_name}")
-                logger.info("[CHAT] calling LLM")
+                start_idx = max(0, len(session.messages) - MAX_HISTORY_MESSAGES)
+                while start_idx > 0 and session.messages[start_idx].role == 'tool_result':
+                    start_idx -= 1
+                recent_messages = session.messages[start_idx:]
                 
                 try:
-                    llm_response = await self.llm_provider.generate_response(
+                    llm_response = await self.orchestrator.generate_response(
                         system_message=self.system_message,
                         messages=recent_messages,
                         tools=self.tool_executor.get_tools()
@@ -241,6 +240,11 @@ Confirme os dados antes de executar as ferramentas. Não invente data ou horári
                     if llm_response.tool_calls:
                         for idx, tc in enumerate(llm_response.tool_calls):
                             logger.info(f"[CHAT] Tool {idx}: name={tc.name}, args={tc.arguments}, metadata={getattr(tc, 'metadata', None)}")
+                except LLMProviderError as e:
+                    # Let the frontend show its native offline message by raising a 503 HTTP Exception
+                    # The frontend has a specific UI for this (lines 136-138 in Chatbot.tsx throws if !response.ok)
+                    logger.error(f"[CHAT] Todos os provedores falharam. Retornando erro 503 para o frontend. {e.message}")
+                    raise HTTPException(status_code=503, detail="O provedor de IA esta temporariamente indisponivel.")
                 except Exception as ex:
                     import traceback
                     logger.error(f"[CHAT] LLM EXCEPTION: {traceback.format_exc()}")

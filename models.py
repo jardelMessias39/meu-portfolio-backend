@@ -30,7 +30,7 @@ class ChatSession(BaseModel):
     messages: List[ChatMessage] = []
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(..., max_length=2000)
     session_id: Optional[str] = None
 
 class ChatResponse(BaseModel):

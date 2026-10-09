@@ -131,10 +131,13 @@ def test_gemini_error_handling():
         
         with patch('google.genai.Client.aio') as mock_aio:
             mock_generate = AsyncMock()
-            mock_generate.side_effect = Exception("Gemini API Error")
+            mock_generate.side_effect = Exception("503 UNAVAILABLE")
             provider.client.aio.models.generate_content = mock_generate
             
-            response = await provider.generate_response("System Prompt", [], [])
-            assert response.content is None
-            assert response.tool_calls is None
+            from llm_provider import LLMProviderError, LLMErrorType
+            import pytest
+            with pytest.raises(LLMProviderError) as exc_info:
+                await provider.generate_response("System Prompt", [], [])
+            
+            assert exc_info.value.error_type == LLMErrorType.PROVIDER_UNAVAILABLE
     asyncio.run(run())

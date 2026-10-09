@@ -75,10 +75,13 @@ def test_openai_error():
         provider = OpenAIProvider()
         
         with patch('openai.resources.chat.completions.AsyncCompletions.create', new_callable=AsyncMock) as mock_create:
-            mock_create.side_effect = Exception("OpenAI Error")
+            mock_create.side_effect = Exception("503 Service Unavailable")
             
-            with pytest.raises(Exception):
+            from llm_provider import LLMProviderError, LLMErrorType
+            with pytest.raises(LLMProviderError) as exc_info:
                 await provider.generate_response("System Prompt", [], [])
+                
+            assert exc_info.value.error_type == LLMErrorType.PROVIDER_UNAVAILABLE
     asyncio.run(run())
 
 def test_multiple_tool_calls():

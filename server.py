@@ -91,11 +91,13 @@ async def chat_endpoint(request: ChatRequest):
 
         return ChatResponse(response=resposta, session_id=nova_session_id)
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        logger.error(f"🔥 ERRO NO CHAT: {traceback.format_exc()}")
+        logger.error(f"ERRO NO CHAT: {traceback.format_exc()}")
         return JSONResponse(
             status_code=500,
-            content={"detail": f"Erro interno: {str(e)}"}
+            content={"detail": "Erro interno no servidor."}
         )
 
 # Outras rotas (Status)
